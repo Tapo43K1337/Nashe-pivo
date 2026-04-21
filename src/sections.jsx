@@ -671,7 +671,7 @@ const FakeMap = () => (
 const Footer = () => (
   <footer className="site-footer" style={{ borderTop: '1px solid var(--line)', padding: '60px 40px 32px', background: 'var(--bg-2)' }}>
     <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-      <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 56 }}>
+      <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 48, marginBottom: 56 }}>
         <div>
           <h3 style={{ fontSize: 32, fontStyle: 'italic', marginBottom: 12 }}>Наше Пиво</h3>
           <p style={{ color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.6, maxWidth: 340 }}>
@@ -679,9 +679,8 @@ const Footer = () => (
           </p>
         </div>
         {[
-          ['Магазин', ['Пиво', 'Закуски', 'Сет-подарунок', 'Оптом']],
-          ['Про нас', ['Історія', 'Наш магазин', 'Пресі', 'Вакансії']],
-          ['Контакт', ['Нікополь', 'Доставка', 'hello@nashepivo.ua', '+380 99 906 00 56']],
+          ['Магазин', ['Пиво', 'Закуски', 'Оптом']],
+          ['Контакт', ['Нікополь', 'Доставка', 'hello@nashepivo.ua', '+380 99 906 00 56', 'Вакансії']],
         ].map(([title, items]) => (
           <div key={title}>
             <div className="mono" style={{ color: 'var(--ink-3)', marginBottom: 16 }}>{title}</div>

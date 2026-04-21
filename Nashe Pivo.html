@@ -167,9 +167,81 @@
       border-top: 1px solid var(--line) !important;
       min-height: 300px !important;
     }
-    .site-footer { padding: 48px 20px 24px !important; }
-    .footer-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
-    .footer-meta { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
+    .site-footer {
+      padding: 40px 20px calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+      background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 42%) !important;
+    }
+    .footer-grid {
+      grid-template-columns: 1fr 1fr !important;
+      column-gap: 18px !important;
+      row-gap: 26px !important;
+      margin-bottom: 36px !important;
+    }
+    .footer-grid > div:first-child {
+      grid-column: 1 / -1;
+      padding-bottom: 22px;
+      margin-bottom: 2px;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
+    }
+    .footer-grid > div:first-child h3 {
+      font-size: clamp(24px, 6.5vw, 30px) !important;
+      margin-bottom: 10px !important;
+    }
+    .footer-grid > div:first-child p {
+      max-width: none !important;
+      font-size: 14px !important;
+      line-height: 1.55 !important;
+    }
+    .footer-grid > div:not(:first-child) .mono {
+      margin-bottom: 10px !important;
+      font-size: 10px !important;
+      letter-spacing: 0.1em !important;
+      color: var(--ink-3) !important;
+    }
+    .footer-grid > div:not(:first-child) .mono::after {
+      content: '';
+      display: block;
+      width: 28px;
+      height: 2px;
+      margin-top: 8px;
+      background: color-mix(in srgb, var(--accent) 55%, transparent);
+      border-radius: 1px;
+    }
+    .footer-grid > div:not(:first-child) a {
+      display: block;
+      padding: 8px 0;
+      font-size: 14px !important;
+      border-radius: 8px;
+      margin: 0 -6px;
+      padding-left: 6px;
+      padding-right: 6px;
+    }
+    .footer-grid > div:not(:first-child) a:active {
+      background: color-mix(in srgb, var(--ink) 7%, transparent);
+    }
+    .footer-meta {
+      flex-direction: column !important;
+      align-items: center !important;
+      text-align: center !important;
+      gap: 14px !important;
+      padding-top: 22px !important;
+      border-top-color: color-mix(in srgb, var(--line) 75%, transparent) !important;
+    }
+    .footer-meta span {
+      display: block;
+      max-width: 320px;
+      line-height: 1.5 !important;
+    }
+    .footer-meta span:first-child { color: var(--ink-2) !important; font-size: 11px !important; letter-spacing: 0.04em !important; text-transform: none !important; }
+    .footer-meta span:last-child {
+      font-size: 10px !important;
+      letter-spacing: 0.08em !important;
+      padding: 9px 16px !important;
+      border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--surface) 45%, transparent);
+      color: var(--ink-3) !important;
+    }
     .prod-modal-overlay {
       display: flex !important;
       align-items: stretch !important;
