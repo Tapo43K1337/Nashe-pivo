@@ -11,7 +11,7 @@ const {
 } = window.ReactRouterDOM;
 
 const { useState, useMemo, useCallback, useEffect } = React;
-const { useNpData, isAdminSession, adminLogin, adminLogout } = window;
+const { useNpData, isAdminSession, isAdminPasswordConfigured, adminLogin, adminLogout } = window;
 
 function RequireAuth() {
   if (!isAdminSession()) return <Navigate to="/admin/login" replace />;
@@ -22,8 +22,11 @@ function AdminLogin() {
   const nav = useNavigate();
   const [pwd, setPwd] = useState('');
   const [err, setErr] = useState('');
+  const missingFile = typeof window !== 'undefined' && window.__NP_ADMIN_CONFIG_MISSING__;
+  const configured = typeof isAdminPasswordConfigured === 'function' && isAdminPasswordConfigured();
   const submit = (e) => {
     e.preventDefault();
+    if (!configured) return;
     if (adminLogin(pwd)) {
       setErr('');
       nav('/admin/orders', { replace: true });
@@ -34,11 +37,18 @@ function AdminLogin() {
       <form onSubmit={submit} style={{ width: '100%', maxWidth: 400, border: '1px solid var(--line)', padding: 32, background: 'var(--bg-2)' }}>
         <span className="mono" style={{ color: 'var(--ink-3)' }}>АДМІН</span>
         <h1 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 32, margin: '12px 0 24px' }}>Вхід</h1>
+        {(missingFile || !configured) ? (
+          <p style={{ color: 'var(--danger)', fontSize: 13, lineHeight: 1.5, marginBottom: 16 }}>
+            Пароль не налаштовано: відсутній <span className="mono" style={{ color: 'var(--ink)' }}>config.secrets.js</span> або він порожній.
+            Скопіюйте <span className="mono" style={{ color: 'var(--ink)' }}>config.secrets.example.js</span> → <span className="mono" style={{ color: 'var(--ink)' }}>config.secrets.js</span> і задайте пароль.
+            На GitHub Pages: repository secret <span className="mono" style={{ color: 'var(--ink)' }}>NP_ADMIN_PASSWORD</span> і деплой через Actions (файл <span className="mono" style={{ color: 'var(--ink)' }}>.github/workflows/deploy-pages.yml</span>).
+          </p>
+        ) : null}
         <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 8, fontSize: 10 }}>ПАРОЛЬ</label>
-        <input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} autoComplete="current-password"
-          style={{ width: '100%', padding: 14, marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontSize: 15 }} />
+        <input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} autoComplete="current-password" disabled={!configured}
+          style={{ width: '100%', padding: 14, marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontSize: 15, opacity: configured ? 1 : 0.5 }} />
         {err ? <p style={{ color: 'var(--danger)', fontSize: 14, marginBottom: 12 }}>{err}</p> : null}
-        <button type="submit" className="mono" style={{ width: '100%', padding: 16, background: 'var(--accent)', color: '#1a1200', border: 'none', letterSpacing: '0.1em', fontSize: 11 }}>
+        <button type="submit" className="mono" disabled={!configured} style={{ width: '100%', padding: 16, background: 'var(--accent)', color: '#1a1200', border: 'none', letterSpacing: '0.1em', fontSize: 11, opacity: configured ? 1 : 0.45 }}>
           Увійти
         </button>
         <p className="mono" style={{ color: 'var(--ink-3)', fontSize: 10, marginTop: 20, textAlign: 'center' }}>

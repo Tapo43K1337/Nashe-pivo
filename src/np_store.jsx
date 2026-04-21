@@ -222,8 +222,14 @@ function isAdminSession() {
   }
 }
 
+function isAdminPasswordConfigured() {
+  const p = typeof window !== 'undefined' && window.__NP_ADMIN_PASSWORD__;
+  return typeof p === 'string' && p.length > 0;
+}
+
 function adminLogin(password) {
-  const expected = (typeof window !== 'undefined' && window.__NP_ADMIN_PASSWORD__) || 'nashepivo';
+  const expected = typeof window !== 'undefined' ? window.__NP_ADMIN_PASSWORD__ : '';
+  if (typeof expected !== 'string' || !expected.length) return false;
   if (password === expected) {
     sessionStorage.setItem(ADMIN_SESSION_KEY, '1');
     return true;
@@ -242,6 +248,7 @@ Object.assign(window, {
   NpDataContext,
   useNpData,
   isAdminSession,
+  isAdminPasswordConfigured,
   adminLogin,
   adminLogout,
   NP_LS_KEYS: LS,

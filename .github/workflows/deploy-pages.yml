@@ -1,0 +1,36 @@
+# Деплой на GitHub Pages з паролем з Secrets (не зберігається в git).
+# 1. Settings → Secrets → Actions → NP_ADMIN_PASSWORD
+# 2. Settings → Pages → Source: GitHub Actions
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Підставити пароль адмінки (лише в артефакт деплою)
+        env:
+          NP_ADMIN_PASSWORD: ${{ secrets.NP_ADMIN_PASSWORD }}
+        run: |
+          node -e "require('fs').writeFileSync('config.secrets.js', 'window.__NP_ADMIN_PASSWORD__ = ' + JSON.stringify(process.env.NP_ADMIN_PASSWORD || '') + ';\\n');"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
