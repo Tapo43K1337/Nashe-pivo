@@ -101,14 +101,30 @@ function NpDataProvider({ children }) {
   }, []);
 
   const addOrder = useCallback((payload) => {
-    const id = `ord_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const row = {
-      id,
-      createdAt: new Date().toISOString(),
-      status: 'new',
-      ...payload,
-    };
-    setOrders((prev) => [row, ...prev]);
+    const createdAt = new Date().toISOString();
+    const d = new Date(createdAt);
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    const ymPrefix = `${y}-${mo}`;
+    const idRe = new RegExp(`^${ymPrefix}-(\\d+)$`);
+
+    let id = '';
+    setOrders((prev) => {
+      let maxSeq = 0;
+      for (const o of prev) {
+        const m = idRe.exec(o.id);
+        if (m) maxSeq = Math.max(maxSeq, parseInt(m[1], 10));
+      }
+      const seq = maxSeq + 1;
+      id = `${ymPrefix}-${String(seq).padStart(4, '0')}`;
+      const row = {
+        id,
+        createdAt,
+        status: 'new',
+        ...payload,
+      };
+      return [row, ...prev];
+    });
     return id;
   }, []);
 

@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>Наше Пиво — крафтова пивоварня</title>
 <meta name="np-github-repo" content="Nashe-pivo" />
+<script>
+(function () {
+  try {
+    var m = document.querySelector('meta[name="np-github-repo"]');
+    var name = m && m.getAttribute('content');
+    if (!name || !/\.github\.io$/i.test(location.hostname)) return;
+    var b = document.createElement('base');
+    b.href = '/' + String(name).replace(/^\/+|\/+$/g, '') + '/';
+    document.head.insertBefore(b, m.nextSibling);
+  } catch (e) {}
+})();
+</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -322,11 +334,117 @@
 
   .admin-root { min-height: 100vh; }
   .admin-table th, .admin-table td { vertical-align: middle; }
+  .admin-side-link {
+    margin-left: -1px;
+    border-left: 2px solid transparent;
+    text-decoration: none;
+  }
+  .admin-side-link.is-active {
+    border-left-color: var(--accent);
+  }
+  .admin-sidebar--collapsed nav,
+  .admin-sidebar--collapsed .admin-sidebar-footer {
+    display: none !important;
+  }
+  .admin-sidebar--collapsed {
+    min-height: 0 !important;
+    align-self: flex-start;
+  }
+  .admin-sidebar--collapsed > div:first-child {
+    border-bottom: none !important;
+  }
+  @media (min-width: 901px) {
+    .admin-sidebar--collapsed {
+      width: auto !important;
+      min-width: 0 !important;
+    }
+  }
   @media (max-width: 900px) {
     .admin-root { flex-direction: column !important; }
-    .admin-sidebar { width: 100% !important; min-height: 0 !important; border-right: none !important; border-bottom: 1px solid var(--line); }
-    .admin-main { padding: 20px 16px !important; }
-    .admin-content-grid { grid-template-columns: 1fr !important; }
+    .admin-sidebar {
+      width: 100% !important;
+      min-height: 0 !important;
+      border-right: none !important;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+    .admin-sidebar > div:first-child { padding: 16px 16px 12px !important; }
+    .admin-sidebar nav {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: 4px;
+      padding: 8px 12px 12px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .admin-sidebar nav::-webkit-scrollbar { display: none; }
+    .admin-side-link {
+      flex: 0 0 auto;
+      white-space: nowrap;
+      margin-left: 0 !important;
+      border-left: none !important;
+      border-bottom: 2px solid transparent;
+      padding: 10px 14px !important;
+    }
+    .admin-side-link.is-active {
+      border-left: none !important;
+      border-bottom-color: var(--accent);
+    }
+    .admin-main { padding: 16px 14px 24px !important; }
+    .admin-main h2 { font-size: clamp(26px, 8vw, 34px) !important; }
+    .admin-content-grid { grid-template-columns: 1fr !important; gap: 20px !important; }
+    .admin-content-aside { position: static !important; top: auto !important; }
+    .admin-settings-card { max-width: none !important; padding: 16px !important; }
+    .admin-social-row {
+      grid-template-columns: 32px 1fr 40px !important;
+      grid-template-rows: auto auto auto;
+    }
+    .admin-social-row > span[draggable] { grid-column: 1; grid-row: 1; align-self: start; padding-top: 4px !important; }
+    .admin-social-row > button { grid-column: 3; grid-row: 1; align-self: start; justify-self: end; }
+    .admin-social-row > input:nth-of-type(1) { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
+    .admin-social-row > input:nth-of-type(2) { grid-column: 1 / -1; grid-row: 3; min-width: 0; }
+  }
+  @media (max-width: 640px) {
+    .admin-table-wrap { border: none !important; background: transparent !important; overflow: visible !important; }
+    .admin-table thead { display: none !important; }
+    .admin-table tbody { display: block; }
+    .admin-table tbody tr.admin-table-row {
+      display: block;
+      margin-bottom: 14px;
+      border: 1px solid var(--line) !important;
+      border-radius: 12px;
+      background: var(--bg-2);
+      border-bottom: none !important;
+      overflow: hidden;
+    }
+    .admin-table tbody td {
+      display: grid !important;
+      grid-template-columns: minmax(88px, 34%) 1fr;
+      gap: 8px 10px;
+      align-items: center;
+      padding: 10px 14px !important;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent) !important;
+      font-size: 13px;
+    }
+    .admin-table tbody tr.admin-table-row td:last-child {
+      border-bottom: none !important;
+    }
+    .admin-table tbody td::before {
+      content: attr(data-label);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+    }
+    .admin-table tbody td[data-label="Дії"] {
+      grid-template-columns: 1fr;
+    }
+    .admin-table tbody td[data-label="Дії"]::before {
+      display: none;
+    }
   }
 </style>
 </head>
