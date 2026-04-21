@@ -10,7 +10,7 @@ const {
   useLocation,
 } = window.ReactRouterDOM;
 
-const { useState, useMemo, useCallback, useEffect } = React;
+const { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } = React;
 const { useNpData, isAdminSession, isAdminPasswordConfigured, adminLogin, adminLogout } = window;
 
 function RequireAuth() {
@@ -71,20 +71,20 @@ function AdminLogoutBtn() {
   );
 }
 
-function AdminSidebar({ menuExpanded, onToggleMenu }) {
+function AdminSidebar({ menuExpanded, onToggleMenu, onNavigate }) {
   const loc = useLocation();
   const link = (segment, label) => {
     const full = `/admin/${segment}`;
     const on = loc.pathname === full || loc.pathname.startsWith(`${full}/`);
     return (
-      <Link to={full} className={`mono admin-side-link${on ? ' is-active' : ''}`} style={{
+      <Link to={full} onClick={() => onNavigate?.()} className={`mono admin-side-link${on ? ' is-active' : ''}`} style={{
         display: 'block', padding: '12px 16px', fontSize: 11, letterSpacing: '0.08em',
         color: on ? 'var(--accent)' : 'var(--ink-2)',
       }}>{label}</Link>
     );
   };
   return (
-    <aside className={`admin-sidebar${menuExpanded ? '' : ' admin-sidebar--collapsed'}`} style={{ width: 260, flexShrink: 0, borderRight: '1px solid var(--line)', background: 'var(--bg-2)', display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <aside className={`admin-sidebar${menuExpanded ? '' : ' admin-sidebar--collapsed'}`} style={{ width: '100%', flexShrink: 0, borderRight: '1px solid var(--line)', background: 'var(--bg-2)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div
         className="admin-sidebar-header"
         style={{
@@ -98,16 +98,29 @@ function AdminSidebar({ menuExpanded, onToggleMenu }) {
         </div>
         <button
           type="button"
-          className="mono"
           aria-expanded={menuExpanded}
           aria-controls="admin-sidebar-nav"
+          aria-label={menuExpanded ? 'Згорнути меню' : 'Розгорнути меню'}
           title={menuExpanded ? 'Згорнути меню' : 'Розгорнути меню'}
           onClick={onToggleMenu}
           style={{
-            flexShrink: 0, padding: '8px 10px', border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--accent)',
-            fontSize: 10, letterSpacing: '0.06em', cursor: 'pointer', lineHeight: 1.2, whiteSpace: 'nowrap',
+            flexShrink: 0,
+            width: 40,
+            minWidth: 40,
+            minHeight: 40,
+            padding: 0,
+            border: '1px solid var(--line)',
+            background: 'var(--surface)',
+            color: 'var(--accent)',
+            fontSize: 22,
+            lineHeight: 1,
+            cursor: 'pointer',
+            fontFamily: 'system-ui, "Segoe UI", Roboto, sans-serif',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
-        >{menuExpanded ? 'Згорнути' : 'Меню'}</button>
+        >{menuExpanded ? '\u2039' : '\u203A'}</button>
       </div>
       <nav id="admin-sidebar-nav" style={{ padding: '16px 0', flex: 1 }}>
         {link('orders', 'Замовлення · клієнти')}
@@ -116,7 +129,7 @@ function AdminSidebar({ menuExpanded, onToggleMenu }) {
       </nav>
       <div className="admin-sidebar-footer" style={{ padding: 16, borderTop: '1px solid var(--line)' }}>
         <AdminLogoutBtn />
-        <Link to="/" className="mono" style={{ display: 'block', textAlign: 'center', marginTop: 12, fontSize: 10, color: 'var(--ink-3)' }}>На сайт</Link>
+        <Link to="/" onClick={() => onNavigate?.()} className="mono" style={{ display: 'block', textAlign: 'center', marginTop: 12, fontSize: 10, color: 'var(--ink-3)' }}>На сайт</Link>
       </div>
     </aside>
   );
@@ -125,11 +138,32 @@ function AdminSidebar({ menuExpanded, onToggleMenu }) {
 function AdminShell() {
   const [menuExpanded, setMenuExpanded] = useState(() => {
     try {
-      return sessionStorage.getItem('np-admin-menu-expanded') !== '0';
-    } catch (e) {
-      return true;
-    }
+      const raw = sessionStorage.getItem('np-admin-menu-expanded');
+      if (raw === '0') return false;
+      if (raw === '1') return true;
+    } catch (e) {}
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches) return false;
+    return true;
   });
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 900px)');
+    const fn = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile || !menuExpanded) {
+      document.body.style.overflow = '';
+      return undefined;
+    }
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [isMobile, menuExpanded]);
+
   const toggleMenu = () => {
     setMenuExpanded((v) => {
       const n = !v;
@@ -137,9 +171,26 @@ function AdminShell() {
       return n;
     });
   };
+
+  const closeMobileMenu = useCallback(() => {
+    if (!isMobile) return;
+    setMenuExpanded(false);
+    try { sessionStorage.setItem('np-admin-menu-expanded', '0'); } catch (e) {}
+  }, [isMobile]);
+
+  const drawerAttr = isMobile ? (menuExpanded ? 'open' : 'closed') : 'off';
+
   return (
-    <div className="admin-root" style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)', color: 'var(--ink)' }}>
-      <AdminSidebar menuExpanded={menuExpanded} onToggleMenu={toggleMenu} />
+    <div className="admin-root" data-np-mobile-drawer={drawerAttr} style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)', color: 'var(--ink)' }}>
+      {isMobile && menuExpanded ? (
+        <button type="button" className="admin-drawer-backdrop" aria-label="Закрити меню" onClick={closeMobileMenu} />
+      ) : null}
+      {isMobile && !menuExpanded ? (
+        <button type="button" className="admin-mobile-menu-fab" onClick={toggleMenu} aria-label="Відкрити меню" title="Меню">
+          {'\u2630'}
+        </button>
+      ) : null}
+      <AdminSidebar menuExpanded={menuExpanded} onToggleMenu={toggleMenu} onNavigate={closeMobileMenu} />
       <main className="admin-main" style={{ flex: 1, minWidth: 0, padding: '32px 40px', overflow: 'auto' }}>
         <Outlet />
       </main>
@@ -716,11 +767,21 @@ function buildPreviewProduct(draft, categories) {
 
 function AdminContent() {
   const {
-    products, upsertProduct, deleteProductId, categories, addCategory, deleteCategory, assignProductCategory,
+    products,
+    setProducts,
+    upsertProduct,
+    deleteProductId,
+    categories,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    assignProductCategory,
   } = useNpData();
   const [selId, setSelId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [newCatName, setNewCatName] = useState('');
+  const [catEdit, setCatEdit] = useState(null);
+  const catalogScrollRef = useRef(null);
 
   const submitNewCategory = (e) => {
     e.preventDefault();
@@ -737,6 +798,26 @@ function AdminContent() {
     setNewCatName('');
   };
 
+  const saveCategoryEdit = () => {
+    if (!catEdit) return;
+    const name = catEdit.name.trim();
+    let slug = catEdit.slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if (!name) return;
+    if (!slug) slug = slugifyCategoryName(name);
+    const row = categories.find((x) => x.id === catEdit.id);
+    if (!row) return;
+    const oldSlug = row.slug;
+    if (slug !== oldSlug && categories.some((x) => x.slug === slug && x.id !== row.id)) {
+      window.alert('Такий slug уже використовується. Оберіть інший.');
+      return;
+    }
+    updateCategory(row.id, { name, slug });
+    if (slug !== oldSlug) {
+      setProducts((prev) => prev.map((p) => (p.cat === oldSlug ? { ...p, cat: slug } : p)));
+    }
+    setCatEdit(null);
+  };
+
   useEffect(() => {
     if (!selId) {
       setDraft(null);
@@ -745,6 +826,13 @@ function AdminContent() {
     const p = products.find((x) => x.id === selId);
     if (p) setDraft({ ...p, image: p.image || '' });
   }, [selId, products]);
+
+  useLayoutEffect(() => {
+    if (!selId || !catalogScrollRef.current) return;
+    const row = catalogScrollRef.current.querySelector(`[data-admin-product-id="${selId}"]`);
+    if (!row) return;
+    row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [selId]);
 
   const preview = useMemo(() => (draft ? buildPreviewProduct(draft, categories) : null), [draft, categories]);
 
@@ -780,10 +868,10 @@ function AdminContent() {
   return (
     <div>
       <h2 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 36, margin: '0 0 8px' }}>Товари</h2>
-      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>Рядок — редагування справа; категорія в тому ж рядку. Прев’ю картки — у колонці праворуч.</p>
+      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>На великому екрані каталог прокручується ліворуч; обраний товар підводиться на вид, форма — праворуч. Категорія в рядку товару.</p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(280px,380px)', gap: 32, alignItems: 'start' }} className="admin-content-grid">
-        <div>
+      <div className="admin-content-grid admin-products-layout" style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
+        <div ref={catalogScrollRef} className="admin-content-main-col">
           <h3 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 22, margin: '0 0 6px' }}>Категорії</h3>
           <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 14, fontSize: 10 }}>Достатньо назви: технічний slug згенерується з неї (латиницею). Завжди коренева категорія.</p>
 
@@ -797,13 +885,38 @@ function AdminContent() {
 
           <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
             {categories.map((c) => (
-              <div key={c.id} style={{ border: '1px solid var(--line)', padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                <div>
-                  <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 9 }}>{c.slug}</span>
-                  <div style={{ fontFamily: 'Fraunces, serif', fontSize: 18 }}>{c.name}</div>
-                  {c.parentId ? <div className="mono" style={{ fontSize: 9, color: 'var(--ink-3)' }}>батько: {categories.find((x) => x.id === c.parentId)?.name || c.parentId}</div> : null}
-                </div>
-                <button type="button" className="mono" onClick={() => deleteCategory(c.id)} style={{ border: '1px solid var(--line)', background: 'transparent', color: 'var(--danger)', padding: '8px 12px', fontSize: 10 }}>Видалити</button>
+              <div key={c.id} style={{ border: '1px solid var(--line)', padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                {catEdit && catEdit.id === c.id ? (
+                  <>
+                    <div style={{ flex: '1 1 220px', minWidth: 0, display: 'grid', gap: 10 }}>
+                      <div>
+                        <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>НАЗВА</label>
+                        <input value={catEdit.name} onChange={(e) => setCatEdit({ ...catEdit, name: e.target.value })} style={{ width: '100%', padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
+                      </div>
+                      <div>
+                        <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>SLUG (латиницею)</label>
+                        <input value={catEdit.slug} onChange={(e) => setCatEdit({ ...catEdit, slug: e.target.value })} className="mono" style={{ width: '100%', padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontSize: 12 }} />
+                      </div>
+                      <p className="mono" style={{ margin: 0, color: 'var(--ink-3)', fontSize: 9 }}>Якщо зміните slug — усі товари з цією категорією оновляться автоматично.</p>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                      <button type="button" className="mono" onClick={saveCategoryEdit} style={{ padding: '10px 16px', background: 'var(--accent)', color: '#1a1200', border: 'none', fontSize: 10 }}>Зберегти</button>
+                      <button type="button" className="mono" onClick={() => setCatEdit(null)} style={{ padding: '10px 16px', border: '1px solid var(--line)', background: 'transparent', color: 'var(--ink-2)', fontSize: 10 }}>Скасувати</button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+                      <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 9 }}>{c.slug}</span>
+                      <div style={{ fontFamily: 'Fraunces, serif', fontSize: 18 }}>{c.name}</div>
+                      {c.parentId ? <div className="mono" style={{ fontSize: 9, color: 'var(--ink-3)' }}>батько: {categories.find((x) => x.id === c.parentId)?.name || c.parentId}</div> : null}
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      <button type="button" className="mono" onClick={() => setCatEdit({ id: c.id, name: c.name, slug: c.slug })} style={{ border: '1px solid var(--line)', background: 'transparent', color: 'var(--accent)', padding: '8px 12px', fontSize: 10 }}>Редагувати</button>
+                      <button type="button" className="mono" onClick={() => { setCatEdit(null); deleteCategory(c.id); }} style={{ border: '1px solid var(--line)', background: 'transparent', color: 'var(--danger)', padding: '8px 12px', fontSize: 10 }}>Видалити</button>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -812,14 +925,19 @@ function AdminContent() {
             <button type="button" className="mono" onClick={startNew} style={{ padding: '12px 16px', background: 'var(--accent)', color: '#1a1200', border: 'none', fontSize: 10 }}>+ Новий товар</button>
           </div>
           <h3 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 22, margin: '0 0 10px' }}>Каталог</h3>
-          <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 12, fontSize: 10 }}>Клік по назві / номеру — форма праворуч. Зміна категорії не змінює вибір рядка.</p>
+          <p className="mono admin-catalog-hint" style={{ color: 'var(--ink-3)', marginBottom: 12, fontSize: 10 }}>Клік по товару — форма нижче (телефон) або праворуч (екран ширший). Категорія в тому ж рядку на ПК; на телефоні — під товаром.</p>
           <div style={{ border: '1px solid var(--line)' }}>
-            {products.map((p, i) => (
+            {products.map((p, i) => {
+              const catName = categories.find((c) => c.slug === p.cat)?.name || p.cat || '—';
+              const catSelectCh = Math.min(Math.max(catName.length + 5, 10), 32);
+              return (
               <div
                 key={p.id}
+                data-admin-product-id={p.id}
+                className="admin-catalog-row"
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '48px minmax(0, 1fr) minmax(132px, 220px)',
+                  gridTemplateColumns: '48px minmax(0, 1fr) auto',
                   gap: 12,
                   alignItems: 'center',
                   padding: '14px 14px 14px 12px',
@@ -829,6 +947,7 @@ function AdminContent() {
               >
                 <button
                   type="button"
+                  className="admin-catalog-hit"
                   onClick={() => setSelId(p.id)}
                   aria-label={`Редагувати: ${p.name}`}
                   style={{
@@ -860,24 +979,37 @@ function AdminContent() {
                   </div>
                 </button>
                 <div
-                  style={{ gridColumn: 3, justifySelf: 'stretch' }}
+                  className="admin-catalog-cat"
+                  style={{ gridColumn: 3, justifySelf: 'start', maxWidth: '100%' }}
                   onMouseDown={(e) => e.stopPropagation()}
                 >
                   <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 4, fontSize: 8 }}>КАТЕГОРІЯ</label>
                   <select
                     value={p.cat}
                     onChange={(e) => assignProductCategory(p.id, e.target.value)}
-                    style={{ width: '100%', padding: 8, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontSize: 12 }}
+                    className="admin-catalog-cat-select"
+                    style={{
+                      width: `${catSelectCh}ch`,
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
+                      padding: '8px 26px 8px 10px',
+                      background: 'var(--surface)',
+                      border: '1px solid var(--line)',
+                      color: 'var(--ink)',
+                      fontSize: 12,
+                    }}
                   >
                     {categories.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
                   </select>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        <div className="admin-content-aside" style={{ position: 'sticky', top: 24 }}>
+        <div className="admin-content-aside-wrap">
+        <div className="admin-content-aside">
           {draft ? (
             <>
               <div style={{ border: '1px solid var(--line)', padding: 20, marginBottom: 20, background: 'var(--bg-2)' }}>
@@ -974,6 +1106,7 @@ function AdminContent() {
           ) : (
             <div className="mono" style={{ color: 'var(--ink-3)', padding: 40, textAlign: 'center', border: '1px dashed var(--line)' }}>Оберіть товар або створіть новий</div>
           )}
+        </div>
         </div>
       </div>
     </div>
