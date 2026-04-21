@@ -1,26 +1,27 @@
-// App root — state, cart, theme wiring
+// App root — публічний сайт + маршрутизація /admin/*
 const { useState: uS, useEffect: uE, useMemo: uM } = React;
+const { BrowserRouter, Routes, Route } = window.ReactRouterDOM || {};
+const { NpDataProvider } = window;
 
 const DEFAULTS = JSON.parse(
   document.getElementById('__tweak_defaults').textContent
     .replace('/*EDITMODE-BEGIN*/', '').replace('/*EDITMODE-END*/', '')
 );
 
-function App() {
+function PublicSite() {
   const [tweaks, setTweaks] = uS(DEFAULTS);
   const [tweakOpen, setTweakOpen] = uS(false);
 
   const [cart, setCart] = uS([]);
   const [cartOpen, setCartOpen] = uS(false);
+  const [checkoutOpen, setCheckoutOpen] = uS(false);
   const [selected, setSelected] = uS(null);
   const [active, setActive] = uS('home');
 
-  // Apply theme
   uE(() => {
     document.documentElement.dataset.theme = tweaks.theme;
   }, [tweaks.theme]);
 
-  // Scroll-spy
   uE(() => {
     const ids = ['home', 'about', 'catalog', 'contacts'];
     const onScroll = () => {
@@ -37,7 +38,6 @@ function App() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Tweaks toolbar integration
   uE(() => {
     const onMsg = (e) => {
       const d = e.data;
@@ -50,16 +50,15 @@ function App() {
   }, []);
 
   const addToCart = (product, qty = 1) => {
-    setCart(c => {
-      const ex = c.find(i => i.id === product.id);
-      if (ex) return c.map(i => i.id === product.id ? { ...i, qty: i.qty + qty } : i);
+    setCart((c) => {
+      const ex = c.find((i) => i.id === product.id);
+      if (ex) return c.map((i) => (i.id === product.id ? { ...i, qty: i.qty + qty } : i));
       return [...c, { ...product, qty }];
     });
-    // Little feedback — open drawer briefly on small add
     setCartOpen(true);
   };
-  const updateQty = (id, q) => setCart(c => c.map(i => i.id === id ? { ...i, qty: q } : i));
-  const removeItem = (id) => setCart(c => c.filter(i => i.id !== id));
+  const updateQty = (id, q) => setCart((c) => c.map((i) => (i.id === id ? { ...i, qty: q } : i)));
+  const removeItem = (id) => setCart((c) => c.filter((i) => i.id !== id));
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
 
@@ -93,6 +92,14 @@ function App() {
         items={cart}
         update={updateQty}
         remove={removeItem}
+        onRequestCheckout={() => { setCartOpen(false); setCheckoutOpen(true); }}
+      />
+      <CheckoutModal
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        onComplete={() => { setCart([]); setCheckoutOpen(false); }}
+        onReturnToCart={() => setCartOpen(true)}
+        items={cart}
       />
 
       {tweakOpen && <TweakPanel state={tweaks} setState={setTweaks} onClose={() => setTweakOpen(false)} />}
@@ -100,4 +107,24 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+function Root() {
+  if (!BrowserRouter || !window.AdminRoutes) {
+    return (
+      <NpDataProvider>
+        <PublicSite />
+      </NpDataProvider>
+    );
+  }
+  return (
+    <NpDataProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/admin/*" element={<AdminRoutes />} />
+          <Route path="/*" element={<PublicSite />} />
+        </Routes>
+      </BrowserRouter>
+    </NpDataProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root />);

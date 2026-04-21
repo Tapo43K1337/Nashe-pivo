@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/admin", "destination": "/Nashe%20Pivo.html" },
+    { "source": "/admin/**", "destination": "/Nashe%20Pivo.html" }
+  ]
+}

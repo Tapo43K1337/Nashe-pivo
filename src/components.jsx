@@ -1,5 +1,6 @@
 // Reusable components: ProductCard (flip), Modal, CartDrawer, etc.
 const { useState, useEffect, useRef, useMemo } = React;
+const useNpData = window.useNpData;
 
 // Product Card — flip variant (mobile: solo = 1 col large, duo = 2 col refined)
 const ProductCard = ({ product, onOpen, onAdd, style = 'flip', density = 'comfortable', mobileCardMode = 'desktop' }) => {
@@ -307,10 +308,278 @@ const DefRow = ({ label, value }) => (
   </div>
 );
 
-// Cart Drawer
-const CartDrawer = ({ open, onClose, items, update, remove }) => {
+// Оформлення замовлення — окрема модалка поверх сторінки
+const CheckoutModal = ({ open, onClose, onComplete, onReturnToCart, items }) => {
+  const { addOrder } = useNpData();
+  const [coStep, setCoStep] = useState(0);
+  const [coName, setCoName] = useState('');
+  const [coPhone, setCoPhone] = useState('');
+  const [coAddress, setCoAddress] = useState('');
+  const [coErr, setCoErr] = useState('');
+
+  const total = items.reduce((s, it) => s + it.price * it.qty, 0);
+  const grandTotal = total + (total >= 500 ? 0 : 80);
+
+  useEffect(() => {
+    if (!open) return;
+    setCoStep(0);
+    setCoName('');
+    setCoPhone('');
+    setCoAddress('');
+    setCoErr('');
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      if (coStep === 3) onComplete();
+      else onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [open, coStep, onClose, onComplete]);
+
+  const dismissOverlay = () => {
+    if (coStep === 3) onComplete();
+    else onClose();
+  };
+
+  const checkoutBack = () => {
+    setCoErr('');
+    if (coStep === 0) {
+      onClose();
+      onReturnToCart?.();
+    } else setCoStep(coStep - 1);
+  };
+
+  const checkoutNext = () => {
+    setCoErr('');
+    if (coStep === 0) {
+      if (!coName.trim()) { setCoErr('Вкажіть ім’я'); return; }
+      setCoStep(1);
+    } else if (coStep === 1) {
+      if (!coPhone.trim()) { setCoErr('Вкажіть номер телефону'); return; }
+      setCoStep(2);
+    } else if (coStep === 2) {
+      if (!coAddress.trim()) { setCoErr('Вкажіть адресу доставки'); return; }
+      const payload = {
+        name: coName.trim(),
+        phone: coPhone.trim(),
+        address: coAddress.trim(),
+        total: grandTotal,
+        delivery: total >= 500 ? 0 : 80,
+        items: items.map((i) => ({ id: i.id, name: i.name, qty: i.qty, price: i.price, line: i.price * i.qty })),
+      };
+      try {
+        addOrder(payload);
+        console.info('[Наше Пиво] Замовлення', payload);
+      } catch (e) {}
+      setCoStep(3);
+    }
+  };
+
+  const inputBase = {
+    width: '100%',
+    boxSizing: 'border-box',
+    padding: '14px 16px',
+    background: 'var(--surface)',
+    border: '1px solid var(--line)',
+    color: 'var(--ink)',
+    fontSize: 16,
+    outline: 'none',
+  };
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="checkout-modal-overlay"
+      onClick={dismissOverlay}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 120,
+        background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)',
+        display: 'grid', placeItems: 'center',
+        padding: 'max(16px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom))',
+        animation: 'fadeUp .25s ease',
+      }}
+    >
+      <div
+        className="checkout-modal"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'var(--bg)',
+          border: '1px solid var(--line)',
+          width: '100%',
+          maxWidth: 440,
+          maxHeight: 'min(92dvh, 640px)',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.45)',
+        }}
+      >
+        <button
+          type="button"
+          onClick={dismissOverlay}
+          style={{
+            position: 'absolute', top: 14, right: 14, zIndex: 2,
+            width: 36, height: 36, border: '1px solid var(--line)',
+            display: 'grid', placeItems: 'center', background: 'var(--bg)',
+          }}
+          aria-label="Закрити"
+        >
+          <Icon.Close />
+        </button>
+
+        <div style={{ padding: '24px 28px 16px', borderBottom: '1px solid var(--line)', paddingRight: 52 }}>
+          <span className="mono" style={{ color: 'var(--ink-3)' }}>
+            {coStep < 3 ? `ОФОРМЛЕННЯ · крок ${coStep + 1} з 3` : 'ГОТОВО'}
+          </span>
+          <h3 style={{ fontSize: 26, fontStyle: 'italic', marginTop: 8, marginBottom: 0 }}>
+            {coStep < 3 ? 'Дані для доставки' : 'Дякуємо!'}
+          </h3>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px', minHeight: 0 }}>
+          {coStep === 3 ? (
+            <div style={{ padding: '8px 0 12px', textAlign: 'center' }}>
+              <p style={{ fontFamily: 'Fraunces, serif', fontSize: 21, fontStyle: 'italic', color: 'var(--ink-2)', lineHeight: 1.45, margin: '0 0 14px' }}>
+                Ми отримали ваше замовлення.
+              </p>
+              <p style={{ color: 'var(--ink-2)', fontSize: 15, lineHeight: 1.6, margin: 0 }}>
+                Ми зв’яжемося з вами для підтвердження замовлення.
+              </p>
+            </div>
+          ) : (
+            <div>
+              <div className="mono" style={{ color: 'var(--ink-3)', marginBottom: 12, fontSize: 10 }}>
+                До сплати: <span style={{ color: 'var(--accent)' }}>{grandTotal} ₴</span>
+              </div>
+              {coStep === 0 && (
+                <>
+                  <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 10 }}>Ім’я</label>
+                  <input
+                    type="text"
+                    autoComplete="name"
+                    value={coName}
+                    onChange={(e) => setCoName(e.target.value)}
+                    placeholder="Як до вас звертатись"
+                    style={inputBase}
+                  />
+                </>
+              )}
+              {coStep === 1 && (
+                <>
+                  <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 10 }}>Телефон</label>
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={coPhone}
+                    onChange={(e) => setCoPhone(e.target.value)}
+                    placeholder="+380 …"
+                    style={inputBase}
+                  />
+                </>
+              )}
+              {coStep === 2 && (
+                <>
+                  <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 10 }}>Адреса</label>
+                  <textarea
+                    autoComplete="street-address"
+                    value={coAddress}
+                    onChange={(e) => setCoAddress(e.target.value)}
+                    placeholder="Місто, вулиця, будинок, під’їзд / поверх"
+                    rows={4}
+                    style={{ ...inputBase, resize: 'vertical', minHeight: 100, fontFamily: 'inherit', lineHeight: 1.45 }}
+                  />
+                </>
+              )}
+              {coErr ? (
+                <p role="alert" style={{ color: 'var(--danger)', fontSize: 13, marginTop: 14, marginBottom: 0 }}>{coErr}</p>
+              ) : null}
+            </div>
+          )}
+        </div>
+
+        {coStep < 3 ? (
+          <div style={{ borderTop: '1px solid var(--line)', padding: '18px 28px 22px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                type="button"
+                onClick={checkoutBack}
+                className="mono"
+                style={{
+                  flex: '0 0 auto',
+                  padding: '14px 16px',
+                  border: '1px solid var(--line)',
+                  background: 'transparent',
+                  color: 'var(--ink-2)',
+                  fontSize: 11,
+                  letterSpacing: '0.08em',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <Icon.Arrow dir="left" /> {coStep === 0 ? 'До кошика' : 'Назад'}
+              </button>
+              <button
+                type="button"
+                onClick={checkoutNext}
+                style={{
+                  flex: 1,
+                  padding: '14px 16px',
+                  background: 'var(--accent)',
+                  color: '#1a1200',
+                  border: 'none',
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: 11,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                {coStep === 2 ? 'Надіслати' : 'Далі'} {coStep < 2 ? <Icon.Arrow /> : null}
+              </button>
+            </div>
+            <p className="mono" style={{ color: 'var(--ink-3)', textAlign: 'center', margin: 0, fontSize: 10 }}>
+              18+ · Ми перевіримо вік при доставці
+            </p>
+          </div>
+        ) : (
+          <div style={{ borderTop: '1px solid var(--line)', padding: '20px 28px 24px' }}>
+            <button
+              type="button"
+              onClick={onComplete}
+              style={{
+                width: '100%', padding: '18px',
+                background: 'var(--accent)', color: '#1a1200', border: 'none',
+                fontFamily: 'JetBrains Mono, monospace', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase',
+              }}
+            >
+              Зрозуміло
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Cart Drawer — лише вміст кошика; оформлення відкриває CheckoutModal
+const CartDrawer = ({ open, onClose, items, update, remove, onRequestCheckout }) => {
   const total = items.reduce((s, it) => s + it.price * it.qty, 0);
   const count = items.reduce((s, it) => s + it.qty, 0);
+  const grandTotal = total + (total >= 500 ? 0 : 80);
   return (
     <>
       <div
@@ -337,7 +606,7 @@ const CartDrawer = ({ open, onClose, items, update, remove }) => {
             <span className="mono" style={{ color: 'var(--ink-3)' }}>КОШИК · {count} поз.</span>
             <h3 style={{ fontSize: 28, fontStyle: 'italic', marginTop: 6 }}>Ваше замовлення</h3>
           </div>
-          <button onClick={onClose} style={{ width: 36, height: 36, display: 'grid', placeItems: 'center' }}>
+          <button type="button" onClick={onClose} style={{ width: 36, height: 36, display: 'grid', placeItems: 'center' }}>
             <Icon.Close />
           </button>
         </div>
@@ -368,7 +637,7 @@ const CartDrawer = ({ open, onClose, items, update, remove }) => {
                 <div style={{ fontFamily: 'Fraunces, serif', fontSize: 18, marginBottom: 10 }}>{it.name}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <Qty value={it.qty} onChange={(q) => update(it.id, q)} />
-                  <button onClick={() => remove(it.id)} className="mono" style={{ color: 'var(--ink-3)', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                  <button type="button" onClick={() => remove(it.id)} className="mono" style={{ color: 'var(--ink-3)', textDecoration: 'underline', textUnderlineOffset: 3 }}>
                     видалити
                   </button>
                 </div>
@@ -388,14 +657,18 @@ const CartDrawer = ({ open, onClose, items, update, remove }) => {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '18px 0 20px' }}>
               <span className="mono" style={{ color: 'var(--ink-3)' }}>РАЗОМ</span>
-              <span style={{ fontFamily: 'Fraunces, serif', fontSize: 36 }}>{total + (total >= 500 ? 0 : 80)} ₴</span>
+              <span style={{ fontFamily: 'Fraunces, serif', fontSize: 36 }}>{grandTotal} ₴</span>
             </div>
-            <button style={{
-              width: '100%', padding: '18px',
-              background: 'var(--accent)', color: '#1a1200', border: 'none',
-              fontFamily: 'JetBrains Mono, monospace', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-            }}>
+            <button
+              type="button"
+              onClick={onRequestCheckout}
+              style={{
+                width: '100%', padding: '18px',
+                background: 'var(--accent)', color: '#1a1200', border: 'none',
+                fontFamily: 'JetBrains Mono, monospace', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              }}
+            >
               Оформити замовлення <Icon.Arrow />
             </button>
             <p className="mono" style={{ color: 'var(--ink-3)', textAlign: 'center', marginTop: 12, fontSize: 10 }}>
@@ -425,4 +698,4 @@ const Pill = ({ active, onClick, children }) => (
   </button>
 );
 
-Object.assign(window, { ProductCard, ProductModal, CartDrawer, Qty, Pill, DefRow });
+Object.assign(window, { ProductCard, ProductModal, CartDrawer, CheckoutModal, Qty, Pill, DefRow });

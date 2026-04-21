@@ -1,5 +1,6 @@
 // Page sections: Nav, Hero, About, Popular, Catalog, Contacts, Footer
 const { useState: useS, useEffect: useE, useMemo: useM, useRef: useR } = React;
+const useNpData = window.useNpData;
 
 // ============== NAV ==============
 const Nav = ({ cartCount, onCartOpen, active }) => {
@@ -329,6 +330,7 @@ const About = () => {
 
 // ============== POPULAR & CATALOG ==============
 const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
+  const { products } = useNpData();
   const [cat, setCat] = useS('all'); // all / beer / snacks
   const [style, setStyle] = useS('all');
   const [strength, setStrength] = useS('all'); // all / light / medium / strong
@@ -365,8 +367,27 @@ const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
     return () => window.removeEventListener('resize', r);
   }, []);
 
+  const catSlugSet = useM(() => [...new Set(products.map((p) => p.cat).filter(Boolean))].sort(), [products]);
+  const catTabs = useM(() => [
+    ['all', 'Все'],
+    ...catSlugSet.map((slug) => [slug, slug === 'beer' ? 'Пиво' : slug === 'snacks' ? 'Закуски' : slug]),
+  ], [catSlugSet]);
+
+  const stylePills = useM(() => {
+    const set = new Set(products.filter((p) => cat === 'all' || p.cat === cat).map((p) => p.style).filter(Boolean));
+    return [...set].sort();
+  }, [cat, products]);
+
+  useE(() => {
+    if (cat !== 'all' && !catSlugSet.includes(cat)) setCat('all');
+  }, [cat, catSlugSet]);
+
+  useE(() => {
+    if (style !== 'all' && !products.some((p) => (cat === 'all' || p.cat === cat) && p.style === style)) setStyle('all');
+  }, [cat, products, style]);
+
   const filtered = useM(() => {
-    let list = PRODUCTS.filter(p => {
+    let list = products.filter(p => {
       if (cat !== 'all' && p.cat !== cat) return false;
       if (style !== 'all' && p.style !== style) return false;
       if (p.price > maxPrice) return false;
@@ -382,7 +403,7 @@ const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
     if (sort === 'price-desc') list = [...list].sort((a,b) => b.price - a.price);
     if (sort === 'abv') list = [...list].sort((a,b) => (b.abv||0) - (a.abv||0));
     return list;
-  }, [cat, style, strength, sort, maxPrice]);
+  }, [cat, style, strength, sort, maxPrice, products]);
 
   const wantCols = density === 'compact' ? 4 : 3;
   const mobileCatalog = vw < 900;
@@ -405,7 +426,7 @@ const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
             </h2>
           </div>
           <div className="mono catalog-meta" style={{ color: 'var(--ink-3)', textAlign: 'right' }}>
-            <div>{filtered.length} / {PRODUCTS.length} позицій</div>
+            <div>{filtered.length} / {products.length} позицій</div>
             <div style={{ marginTop: 4 }}>
               {mobileCardMode === 'solo' ? 'Торкніть картку — деталі' : mobileCardMode === 'duo' ? 'Дві колонки — торкніть для деталей' : 'Наведіть — щоб перевернути'}
             </div>
@@ -414,7 +435,7 @@ const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
 
         {/* Category tabs */}
         <div className="catalog-tabs-row" style={{ display: 'flex', gap: 0, marginBottom: 28, borderBottom: '1px solid var(--line)' }}>
-          {[['all', 'Все'], ['beer', 'Пиво'], ['snacks', 'Закуски']].map(([k, v]) => (
+          {catTabs.map(([k, v]) => (
             <button key={k} onClick={() => { setCat(k); setStyle('all'); }}
               className="mono"
               style={{
@@ -424,7 +445,7 @@ const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
                 color: cat === k ? 'var(--ink)' : 'var(--ink-3)',
               }}>
               {v} <span style={{ color: 'var(--ink-3)', marginLeft: 6 }}>
-                {k === 'all' ? PRODUCTS.length : PRODUCTS.filter(p => p.cat === k).length}
+                {k === 'all' ? products.length : products.filter(p => p.cat === k).length}
               </span>
             </button>
           ))}
@@ -436,7 +457,7 @@ const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
             <div className="mono" style={{ color: 'var(--ink-3)', marginBottom: 10 }}>СТИЛЬ</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <Pill active={style === 'all'} onClick={() => setStyle('all')}>Будь-який</Pill>
-              {STYLES.filter(s => cat === 'all' || (cat === 'snacks' ? s === 'Снеки' : s !== 'Снеки')).map(s => (
+              {stylePills.map(s => (
                 <Pill key={s} active={style === s} onClick={() => setStyle(s)}>{s}</Pill>
               ))}
             </div>
@@ -538,6 +559,9 @@ const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
 
 // ============== CONTACTS ==============
 const Contacts = () => {
+  const { settings } = useNpData();
+  const rawTel = String(settings.phoneTel || '+380999060056').replace(/\s/g, '').replace(/^tel:/i, '');
+  const telHref = `tel:${rawTel}`;
   return (
     <section id="contacts" data-screen-label="04 Contacts" className="contacts-section" style={{ padding: '140px 40px 80px', position: 'relative' }}>
       <div style={{ maxWidth: 1280, margin: '0 auto' }}>
@@ -556,7 +580,7 @@ const Contacts = () => {
             <div>
               <div className="mono" style={{ color: 'var(--ink-3)', marginBottom: 10 }}>АДРЕСА</div>
               <div style={{ fontFamily: 'Fraunces, serif', fontSize: 24, lineHeight: 1.3 }}>
-                вул. Патріотів України, 173<br/>Нікополь, Дніпропетровська обл., 53207
+                {settings.addressLine || '—'}<br />{settings.cityLine || ''}
               </div>
             </div>
 
@@ -574,10 +598,13 @@ const Contacts = () => {
             <div>
               <div className="mono" style={{ color: 'var(--ink-3)', marginBottom: 10 }}>ЗВ’ЯЗОК</div>
               <div style={{ display: 'grid', gap: 10, fontFamily: 'Fraunces, serif', fontSize: 17 }}>
-                <a href="tel:+380999060056" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Icon.Phone size={16} /> +380 99 906 00 56
+                <a href={telHref} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Icon.Phone size={16} /> {settings.phoneDisplay || '+380 99 906 00 56'}
                 </a>
-                <a href="mailto:hello@nashepivo.ua" style={{ color: 'var(--ink-2)' }}>hello@nashepivo.ua</a>
+                <a href={`mailto:${settings.email || 'hello@nashepivo.ua'}`} style={{ color: 'var(--ink-2)' }}>{settings.email || 'hello@nashepivo.ua'}</a>
+                {(settings.socials || []).filter((s) => s.url).map((s) => (
+                  <a key={s.id || s.url} href={s.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ink-2)' }}>{s.label || s.url}</a>
+                ))}
               </div>
             </div>
 
