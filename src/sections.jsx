@@ -206,7 +206,69 @@ const Nav = ({ cartCount, onCartOpen, active }) => {
 };
 
 // ============== HERO ==============
-const Hero = () => (
+const DEFAULT_HERO_STATS = [
+  { value: '50', label: 'позицій у каталозі' },
+  { value: '11', label: 'років у справі' },
+  { value: '7', label: 'днів на тиждень' },
+];
+
+function resolveHeroStats(settings) {
+  const raw = settings?.heroStats;
+  if (!Array.isArray(raw) || raw.length < 3) return DEFAULT_HERO_STATS;
+  const out = [];
+  for (let i = 0; i < 3; i++) {
+    const x = raw[i];
+    const d = DEFAULT_HERO_STATS[i];
+    out.push({
+      value: typeof x?.value === 'string' && x.value.trim() !== '' ? x.value : d.value,
+      label: typeof x?.label === 'string' && x.label.trim() !== '' ? x.label : d.label,
+    });
+  }
+  return out;
+}
+
+function resolveHeroFeaturedProducts(products, settings) {
+  const list = Array.isArray(products) ? products : [];
+  const rawIds = settings?.heroFeaturedProductIds;
+  const ids = Array.isArray(rawIds) ? rawIds.map((id) => (id == null ? '' : String(id))).slice(0, 5) : [];
+  while (ids.length < 5) ids.push('');
+  const byId = new Map(list.map((p) => [p.id, p]));
+  const used = new Set();
+  const tiles = [];
+  for (let s = 0; s < 5; s++) {
+    const id = ids[s];
+    if (id && byId.has(id) && !used.has(id)) {
+      used.add(id);
+      tiles.push(byId.get(id));
+      continue;
+    }
+    const fb = list.find((p) => !used.has(p.id));
+    if (fb) {
+      used.add(fb.id);
+      tiles.push(fb);
+    } else {
+      tiles.push(null);
+    }
+  }
+  return tiles;
+}
+
+const Hero = () => {
+  const { settings, products } = useNpData();
+  const heroStats = resolveHeroStats(settings);
+  const heroTiles = resolveHeroFeaturedProducts(products, settings);
+  const kicker = typeof settings.heroKicker === 'string' && settings.heroKicker.trim() !== '' ? settings.heroKicker : 'НІКОПОЛЬ · З 2014 РОКУ';
+  const t1 = typeof settings.heroTitleLine1 === 'string' && settings.heroTitleLine1.trim() !== '' ? settings.heroTitleLine1 : 'Пиво,';
+  const accent = typeof settings.heroTitleAccent === 'string' ? settings.heroTitleAccent.trim() : '';
+  const t3 = typeof settings.heroTitleLine3 === 'string' && settings.heroTitleLine3.trim() !== '' ? settings.heroTitleLine3 : 'з душею.';
+  const lead =
+    typeof settings.heroLead === 'string' && settings.heroLead.trim() !== ''
+      ? settings.heroLead
+      : 'Магазин пива у Нікополі. У каталозі 50 позицій — крафт, класика, імпорт. Допоможемо обрати саме те, що підійде до вашого настрою.';
+  const cta1 = typeof settings.heroCtaPrimary === 'string' && settings.heroCtaPrimary.trim() !== '' ? settings.heroCtaPrimary : 'Обрати пиво';
+  const cta2 = typeof settings.heroCtaSecondary === 'string' && settings.heroCtaSecondary.trim() !== '' ? settings.heroCtaSecondary : 'Про магазин';
+
+  return (
     <section id="home" data-screen-label="01 Home" className="hero-section" style={{
       minHeight: '100vh',
       padding: '120px 40px 60px',
@@ -229,15 +291,21 @@ const Hero = () => (
         <div className="fadeUp" style={{ animationDelay: '.1s' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 32 }}>
             <span style={{ width: 40, height: 1, background: 'var(--accent)' }} />
-            <span className="mono" style={{ color: 'var(--accent)' }}>НІКОПОЛЬ · З 2014 РОКУ</span>
+            <span className="mono" style={{ color: 'var(--accent)' }}>{kicker}</span>
           </div>
           <h1 style={{ fontSize: 'clamp(56px, 8vw, 120px)', lineHeight: 0.95, marginBottom: 28, letterSpacing: '-0.03em' }}>
-            Пиво,<br/>
-            <span style={{ fontStyle: 'italic', color: 'var(--accent)' }}>обране</span><br/>
-            з душею.
+            {t1}
+            <br />
+            {accent ? (
+              <>
+                <span style={{ fontStyle: 'italic', color: 'var(--accent)' }}>{accent}</span>
+                <br />
+              </>
+            ) : null}
+            {t3}
           </h1>
           <p style={{ fontSize: 18, lineHeight: 1.55, color: 'var(--ink-2)', maxWidth: 460, marginBottom: 40 }}>
-            Магазин пива у Нікополі. У каталозі 50 позицій — крафт, класика, імпорт. Допоможемо обрати саме те, що підійде до вашого настрою.
+            {lead}
           </p>
           <div className="hero-cta" style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
             {RR?.Link ? (
@@ -249,7 +317,7 @@ const Hero = () => (
                   display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none',
                 }}
               >
-                Обрати пиво <Icon.Arrow />
+                {cta1} <Icon.Arrow />
               </RR.Link>
             ) : (
               <button
@@ -261,12 +329,12 @@ const Hero = () => (
                   display: 'flex', alignItems: 'center', gap: 10,
                 }}
               >
-                Обрати пиво <Icon.Arrow />
+                {cta1} <Icon.Arrow />
               </button>
             )}
             {RR?.Link ? (
               <RR.Link to="/about" className="mono" style={{ padding: '18px 4px', color: 'var(--ink-2)', borderBottom: '1px solid var(--line)', textDecoration: 'none' }}>
-                Про магазин
+                {cta2}
               </RR.Link>
             ) : (
               <button
@@ -274,16 +342,16 @@ const Hero = () => (
                 onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}
                 className="mono"
                 style={{ padding: '18px 4px', color: 'var(--ink-2)', borderBottom: '1px solid var(--line)' }}>
-                Про магазин
+                {cta2}
               </button>
             )}
           </div>
         </div>
         <div className="hero-stats" style={{ display: 'flex', gap: 48, marginTop: 72, flexWrap: 'wrap' }}>
-          {[['50', 'позицій у каталозі'], ['11', 'років у справі'], ['7', 'днів на тиждень']].map(([k, v]) => (
-            <div key={k}>
-              <div style={{ fontFamily: 'Fraunces, serif', fontSize: 42, fontStyle: 'italic', color: 'var(--accent)' }}>{k}</div>
-              <div className="mono" style={{ color: 'var(--ink-3)', marginTop: 4 }}>{v}</div>
+          {heroStats.map((row, idx) => (
+            <div key={`hero-stat-${idx}`}>
+              <div style={{ fontFamily: 'Fraunces, serif', fontSize: 42, fontStyle: 'italic', color: 'var(--accent)' }}>{row.value}</div>
+              <div className="mono" style={{ color: 'var(--ink-3)', marginTop: 4 }}>{row.label}</div>
             </div>
           ))}
         </div>
@@ -307,25 +375,39 @@ const Hero = () => (
             { i: 3, gridColumn: '2', gridRow: '2' },
             { i: 4, gridColumn: '3', gridRow: '2' },
           ].map(({ i, gridColumn, gridRow }) => {
-            const p = PRODUCTS[i];
+            const p = heroTiles[i];
             return (
               <div
-                key={p.id}
+                key={p ? p.id : `hero-slot-${i}`}
                 style={{
                   position: 'relative',
                   overflow: 'hidden',
                   minHeight: 0,
                   gridColumn,
                   gridRow,
+                  background: p ? undefined : 'var(--bg-2)',
                 }}
               >
-                <img src={p.image} alt={p.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.52) 0%, transparent 52%)' }} />
-                <div style={{ position: 'absolute', bottom: 10, left: 12, right: 10 }}>
-                  <div className="mono" style={{ color: 'rgba(255,255,255,0.65)', fontSize: 9 }}>{p.style}</div>
-                  <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: i === 0 ? 14 : 12, color: '#fff', lineHeight: 1.2 }}>{p.name}</div>
-                </div>
+                {p ? (
+                  <>
+                    {p.image ? (
+                      <img src={p.image} alt={p.name || ''}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    ) : (
+                      <div style={{
+                        width: '100%', height: '100%', minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'color-mix(in srgb, var(--surface) 90%, transparent)', color: 'var(--ink-2)', padding: 16, textAlign: 'center', fontSize: 14,
+                      }}>{p.name || p.id}</div>
+                    )}
+                    {p.image ? (
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.52) 0%, transparent 52%)' }} />
+                    ) : null}
+                    <div style={{ position: 'absolute', bottom: 10, left: 12, right: 10, pointerEvents: 'none' }}>
+                      <div className="mono" style={{ color: p.image ? 'rgba(255,255,255,0.65)' : 'var(--ink-3)', fontSize: 9 }}>{p.style}</div>
+                      <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: i === 0 ? 14 : 12, color: p.image ? '#fff' : 'var(--ink)', lineHeight: 1.2 }}>{p.name}</div>
+                    </div>
+                  </>
+                ) : null}
               </div>
             );
           })}
@@ -335,17 +417,18 @@ const Hero = () => (
       {/* Marquee footer */}
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, borderTop: '1px solid var(--line)', overflow: 'hidden', padding: '14px 0' }}>
         <div style={{ display: 'flex', gap: 48, whiteSpace: 'nowrap', animation: 'marquee 40s linear infinite', width: 'fit-content' }}>
-          {Array(3).fill(0).map((_, i) => (
-            <React.Fragment key={i}>
+          {Array(3).fill(0).map((_, j) => (
+            <React.Fragment key={j}>
               {['Крафт і класика', 'Великий вибір', 'Свіже постачання', 'Пиво з усієї України', 'Допоможемо обрати', 'Нікополь, вул. Патріотів України, 173'].map(t => (
-                <span key={t + i} className="mono" style={{ color: 'var(--ink-3)' }}>— {t}</span>
+                <span key={t + j} className="mono" style={{ color: 'var(--ink-3)' }}>— {t}</span>
               ))}
             </React.Fragment>
           ))}
         </div>
       </div>
     </section>
-);
+  );
+};
 
 // ============== ABOUT ==============
 const About = () => {

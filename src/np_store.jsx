@@ -38,6 +38,20 @@ function defaultSettings() {
       { id: 'soc-1', label: 'Instagram', url: 'https://instagram.com/' },
       { id: 'soc-2', label: 'Facebook', url: 'https://facebook.com/' },
     ],
+    heroKicker: 'НІКОПОЛЬ · З 2014 РОКУ',
+    heroTitleLine1: 'Пиво,',
+    heroTitleAccent: 'обране',
+    heroTitleLine3: 'з душею.',
+    heroLead:
+      'Магазин пива у Нікополі. У каталозі 50 позицій — крафт, класика, імпорт. Допоможемо обрати саме те, що підійде до вашого настрою.',
+    heroCtaPrimary: 'Обрати пиво',
+    heroCtaSecondary: 'Про магазин',
+    heroStats: [
+      { value: '50', label: 'позицій у каталозі' },
+      { value: '11', label: 'років у справі' },
+      { value: '7', label: 'днів на тиждень' },
+    ],
+    heroFeaturedProductIds: [],
   };
 }
 

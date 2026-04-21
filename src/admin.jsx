@@ -71,7 +71,7 @@ function AdminLogoutBtn() {
   );
 }
 
-function AdminSidebar({ menuExpanded, onToggleMenu, onNavigate }) {
+function AdminSidebar({ menuExpanded, onToggleMenu, onNavigate, isMobile }) {
   const loc = useLocation();
   const link = (segment, label) => {
     const full = `/admin/${segment}`;
@@ -96,37 +96,55 @@ function AdminSidebar({ menuExpanded, onToggleMenu, onNavigate }) {
           <span className="mono" style={{ color: 'var(--accent)' }}>НАШЕ ПИВО</span>
           <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 17, lineHeight: 1.2, marginTop: 6 }}>Панель адміністратора</div>
         </div>
-        <button
-          type="button"
-          className="admin-sidebar-menu-toggle"
-          aria-expanded={menuExpanded}
-          aria-controls="admin-sidebar-nav"
-          aria-label={menuExpanded ? 'Згорнути меню' : 'Розгорнути меню'}
-          title={menuExpanded ? 'Згорнути меню' : 'Розгорнути меню'}
-          onClick={onToggleMenu}
-          style={{
-            flexShrink: 0,
-            width: 40,
-            minWidth: 40,
-            minHeight: 40,
-            padding: 0,
-            border: '1px solid var(--line)',
-            background: 'var(--surface)',
-            color: 'var(--accent)',
-            fontSize: 22,
-            lineHeight: 1,
-            cursor: 'pointer',
-            fontFamily: 'system-ui, "Segoe UI", Roboto, sans-serif',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >{menuExpanded ? '\u2039' : '\u203A'}</button>
+        {isMobile ? (
+          <button
+            type="button"
+            className="mono admin-sidebar-close-mobile"
+            onClick={onNavigate}
+            style={{
+              flexShrink: 0,
+              padding: '10px 14px',
+              border: '1px solid var(--line)',
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+              fontSize: 10,
+              letterSpacing: '0.08em',
+              cursor: 'pointer',
+            }}
+          >Закрити</button>
+        ) : (
+          <button
+            type="button"
+            className="admin-sidebar-menu-toggle"
+            aria-expanded={menuExpanded}
+            aria-controls="admin-sidebar-nav"
+            aria-label={menuExpanded ? 'Згорнути меню' : 'Розгорнути меню'}
+            title={menuExpanded ? 'Згорнути меню' : 'Розгорнути меню'}
+            onClick={onToggleMenu}
+            style={{
+              flexShrink: 0,
+              width: 40,
+              minWidth: 40,
+              minHeight: 40,
+              padding: 0,
+              border: '1px solid var(--line)',
+              background: 'var(--surface)',
+              color: 'var(--accent)',
+              fontSize: 22,
+              lineHeight: 1,
+              cursor: 'pointer',
+              fontFamily: 'system-ui, "Segoe UI", Roboto, sans-serif',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >{menuExpanded ? '\u2039' : '\u203A'}</button>
+        )}
       </div>
       <nav id="admin-sidebar-nav" style={{ padding: '16px 0', flex: 1 }}>
         {link('orders', 'Замовлення · клієнти')}
         {link('products', 'Товари')}
-        {link('settings', 'Контакти · соцмережі')}
+        {link('settings', 'Головна · контакти')}
       </nav>
       <div className="admin-sidebar-footer" style={{ padding: 16, borderTop: '1px solid var(--line)' }}>
         <AdminLogoutBtn />
@@ -194,12 +212,23 @@ function AdminShell() {
       {isMobile && menuExpanded ? (
         <button type="button" className="admin-drawer-backdrop" aria-label="Закрити меню" onClick={closeMobileMenu} />
       ) : null}
-      {isMobile && !menuExpanded ? (
-        <button type="button" className="admin-mobile-menu-fab" onClick={toggleMenu} aria-label="Відкрити меню" title="Меню">
-          {'\u2630'}
-        </button>
+      {isMobile ? (
+        <header className="admin-mobile-topbar">
+          <button
+            type="button"
+            className="admin-mobile-topbar-menu"
+            onClick={toggleMenu}
+            aria-expanded={menuExpanded}
+            aria-label={menuExpanded ? 'Закрити меню' : 'Відкрити меню'}
+            title={menuExpanded ? 'Закрити' : 'Меню'}
+          >
+            {menuExpanded ? '\u2715' : '\u2630'}
+          </button>
+          <span className="admin-mobile-topbar-title mono">Адмін</span>
+          <span className="admin-mobile-topbar-spacer" aria-hidden="true" />
+        </header>
       ) : null}
-      <AdminSidebar menuExpanded={menuExpanded} onToggleMenu={toggleMenu} onNavigate={closeMobileMenu} />
+      <AdminSidebar isMobile={isMobile} menuExpanded={menuExpanded} onToggleMenu={toggleMenu} onNavigate={closeMobileMenu} />
       <main className="admin-main" style={{ flex: 1, minWidth: 0, padding: '32px 40px', overflow: 'auto' }}>
         <Outlet />
       </main>
@@ -774,6 +803,104 @@ function buildPreviewProduct(draft, categories) {
   };
 }
 
+function AdminProductEditor({ draft, setDraft, categories, products, preview, cardStyle, onSave, onDelete }) {
+  if (!draft) return null;
+  return (
+    <>
+      <div style={{ border: '1px solid var(--line)', padding: 20, marginBottom: 20, background: 'var(--bg-2)' }}>
+        <div className="mono" style={{ color: 'var(--ink-3)', marginBottom: 12, fontSize: 10 }}>РЕДАГУВАННЯ</div>
+        {[
+          ['name', 'Назва'],
+          ['price', 'Ціна (₴)', 'number'],
+          ['style', 'Стиль / тип'],
+          ['tagline', 'Короткий опис'],
+          ['notes', 'Смак / опис'],
+          ['pair', 'Поєднання'],
+          ['origin', 'Походження'],
+          ['vol', "Об'єм"],
+          ['color', 'Колір (hex) · авто з фото'],
+        ].map(([key, label, type]) => (
+          <div key={key} style={{ marginBottom: 12 }}>
+            <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>{label}</label>
+            {key === 'notes' ? (
+              <textarea value={draft[key] || ''} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} rows={3}
+                style={{ width: '100%', padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontFamily: 'inherit' }} />
+            ) : (
+              <input type={type || 'text'} value={draft[key] ?? ''} onChange={(e) => setDraft({ ...draft, [key]: key === 'price' || key === 'abv' || key === 'ibu' ? (e.target.value === '' ? '' : e.target.value) : e.target.value })}
+                style={{ width: '100%', padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
+            )}
+          </div>
+        ))}
+        <div style={{ marginBottom: 12 }}>
+          <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>ФОТО</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+            <label className="mono" style={{
+              display: 'inline-block', padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--accent)', cursor: 'pointer', fontSize: 10, letterSpacing: '0.06em',
+            }}>
+              Загрузить фото
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                const f = e.target.files && e.target.files[0];
+                e.target.value = '';
+                if (!f) return;
+                compressImageFileToDataUrl(f).then((url) => accentHexFromImageDataUrl(url).then((hex) => ({ url, hex }))).then(({ url, hex }) => {
+                  setDraft((d) => (d ? { ...d, image: url, color: hex } : d));
+                }).catch(() => {
+                  window.alert('Не вдалося обробити файл. Спробуйте JPG або PNG.');
+                });
+              }} />
+            </label>
+            {draft.image ? (
+              <>
+                <button type="button" className="mono" onClick={() => setDraft({ ...draft, image: '' })}
+                  style={{ padding: '10px 14px', border: '1px solid var(--line)', background: 'transparent', color: 'var(--ink-2)', fontSize: 10 }}>
+                  Прибрати фото
+                </button>
+                <img src={draft.image} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--line)' }} />
+              </>
+            ) : null}
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>ABV</label>
+            <input type="number" step="0.1" value={draft.abv ?? ''} onChange={(e) => setDraft({ ...draft, abv: e.target.value === '' ? null : Number(e.target.value) })}
+              style={{ width: '100%', padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
+          </div>
+          <div>
+            <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>IBU</label>
+            <input type="number" value={draft.ibu ?? ''} onChange={(e) => setDraft({ ...draft, ibu: e.target.value === '' ? '' : Number(e.target.value) })}
+              style={{ width: '100%', padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
+          </div>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>КАТЕГОРІЯ (slug)</label>
+          <select value={draft.cat} onChange={(e) => setDraft({ ...draft, cat: e.target.value })} style={{ width: '100%', padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }}>
+            {categories.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
+          </select>
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+          <button type="button" className="mono" onClick={onSave} style={{ flex: 1, padding: 14, background: 'var(--accent)', color: '#1a1200', border: 'none', fontSize: 10 }}>Зберегти</button>
+          <button type="button" className="mono" disabled={!products.some((p) => p.id === draft.id)}
+            onClick={onDelete}
+            style={{ padding: 14, border: '1px solid var(--danger)', color: 'var(--danger)', background: 'transparent', fontSize: 10, opacity: products.some((p) => p.id === draft.id) ? 1 : 0.4 }}>Видалити</button>
+        </div>
+      </div>
+
+      <div className="mono" style={{ color: 'var(--ink-3)', marginBottom: 10, fontSize: 10 }}>LIVE PREVIEW (ProductCard)</div>
+      <div style={{ maxWidth: 340, margin: '0 auto' }}>
+        <ProductCard
+          product={preview}
+          onOpen={() => {}}
+          onAdd={() => {}}
+          style={cardStyle}
+          density="comfortable"
+          mobileCardMode="solo"
+        />
+      </div>
+    </>
+  );
+}
+
 function AdminContent() {
   const {
     products,
@@ -791,6 +918,16 @@ function AdminContent() {
   const [newCatName, setNewCatName] = useState('');
   const [catEdit, setCatEdit] = useState(null);
   const catalogScrollRef = useRef(null);
+  const asideInnerRef = useRef(null);
+  const [formAlignDy, setFormAlignDy] = useState(0);
+  const [wideProductsLayout, setWideProductsLayout] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 901px)').matches);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 901px)');
+    const fn = () => setWideProductsLayout(mq.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
 
   const submitNewCategory = (e) => {
     e.preventDefault();
@@ -837,11 +974,80 @@ function AdminContent() {
   }, [selId, products]);
 
   useLayoutEffect(() => {
-    if (!selId || !catalogScrollRef.current) return;
+    if (!selId || !catalogScrollRef.current) {
+      setFormAlignDy(0);
+      return;
+    }
     const row = catalogScrollRef.current.querySelector(`[data-admin-product-id="${selId}"]`);
-    if (!row) return;
-    row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [selId]);
+    if (!row) {
+      setFormAlignDy(0);
+      return;
+    }
+    if (wideProductsLayout) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+    let raf = 0;
+    const measureFormAlign = () => {
+      if (!wideProductsLayout) {
+        setFormAlignDy(0);
+        return;
+      }
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        if (!catalogScrollRef.current || !asideInnerRef.current || !selId) {
+          setFormAlignDy(0);
+          return;
+        }
+        const r = catalogScrollRef.current.querySelector(`[data-admin-product-id="${selId}"]`);
+        if (!r) {
+          setFormAlignDy(0);
+          return;
+        }
+        const rr = r.getBoundingClientRect();
+        const ar = asideInnerRef.current.getBoundingClientRect();
+        let dy = rr.top - ar.top;
+        const vh = window.innerHeight;
+        const newTop = ar.top + dy;
+        const newBottom = ar.bottom + dy;
+        if (newTop < 10) dy += 10 - newTop;
+        if (newBottom > vh - 14) dy -= newBottom - (vh - 14);
+        setFormAlignDy(dy);
+      });
+    };
+
+    measureFormAlign();
+    const t = window.setTimeout(measureFormAlign, 280);
+    const main = document.querySelector('.admin-main');
+    main?.addEventListener('scroll', measureFormAlign, { passive: true });
+    window.addEventListener('resize', measureFormAlign, { passive: true });
+    let ro;
+    if (asideInnerRef.current && typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(measureFormAlign);
+      ro.observe(asideInnerRef.current);
+    }
+    return () => {
+      window.clearTimeout(t);
+      main?.removeEventListener('scroll', measureFormAlign);
+      window.removeEventListener('resize', measureFormAlign);
+      cancelAnimationFrame(raf);
+      if (ro) ro.disconnect();
+    };
+  }, [selId, products, wideProductsLayout]);
+
+  useEffect(() => {
+    if (wideProductsLayout || !draft) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [wideProductsLayout, draft]);
+
+  useEffect(() => {
+    if (wideProductsLayout || !draft) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setSelId(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [wideProductsLayout, draft]);
 
   const preview = useMemo(() => (draft ? buildPreviewProduct(draft, categories) : null), [draft, categories]);
 
@@ -877,10 +1083,10 @@ function AdminContent() {
   return (
     <div>
       <h2 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 36, margin: '0 0 8px' }}>Товари</h2>
-      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>На широкому екрані список ліворуч, форма редагування — праворуч після вибору товару. Сторінка прокручується як одне ціле. Категорія в рядку товару.</p>
+      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>Категорії — зверху на всю ширину. На телефоні редагування — у спливаючому вікні; на широкому екрані форма праворуч і підтягується до рядка товару.</p>
 
-      <div className="admin-content-grid admin-products-layout" style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
-        <div ref={catalogScrollRef} className="admin-content-main-col">
+      <div className="admin-products-page">
+        <div className="admin-products-categories">
           <h3 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 22, margin: '0 0 6px' }}>Категорії</h3>
           <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 14, fontSize: 10 }}>Достатньо назви: технічний slug згенерується з неї (латиницею). Завжди коренева категорія.</p>
 
@@ -892,7 +1098,7 @@ function AdminContent() {
             </div>
           </form>
 
-          <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
+          <div style={{ display: 'grid', gap: 10, marginBottom: 0 }}>
             {categories.map((c) => (
               <div key={c.id} style={{ border: '1px solid var(--line)', padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                 {catEdit && catEdit.id === c.id ? (
@@ -929,12 +1135,15 @@ function AdminContent() {
               </div>
             ))}
           </div>
+        </div>
 
+        <div className="admin-content-grid admin-products-layout" style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
+        <div ref={catalogScrollRef} className="admin-content-main-col">
           <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
             <button type="button" className="mono" onClick={startNew} style={{ padding: '12px 16px', background: 'var(--accent)', color: '#1a1200', border: 'none', fontSize: 10 }}>+ Новий товар</button>
           </div>
           <h3 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 22, margin: '0 0 10px' }}>Каталог</h3>
-          <p className="mono admin-catalog-hint" style={{ color: 'var(--ink-3)', marginBottom: 12, fontSize: 10 }}>Клік по товару — форма нижче (телефон) або праворуч (екран ширший). Категорія в тому ж рядку на ПК; на телефоні — під товаром.</p>
+          <p className="mono admin-catalog-hint" style={{ color: 'var(--ink-3)', marginBottom: 12, fontSize: 10 }}>Клік по рядку — на телефоні відкривається вікно редагування; на широкому екрані форма праворуч.</p>
           <div style={{ border: '1px solid var(--line)' }}>
             {products.map((p, i) => {
               const catName = categories.find((c) => c.slug === p.cat)?.name || p.cat || '—';
@@ -1001,7 +1210,7 @@ function AdminContent() {
                       width: `${catSelectCh}ch`,
                       maxWidth: '100%',
                       boxSizing: 'border-box',
-                      padding: '8px 26px 8px 10px',
+                      padding: '8px 10px',
                       background: 'var(--surface)',
                       border: '1px solid var(--line)',
                       color: 'var(--ink)',
@@ -1017,106 +1226,74 @@ function AdminContent() {
           </div>
         </div>
 
-        <div className="admin-content-aside-wrap">
+        <div className="admin-content-aside-wrap" style={{ display: wideProductsLayout ? undefined : 'none' }}>
         <div className="admin-content-aside">
+          <div
+            ref={asideInnerRef}
+            className="admin-content-aside-inner"
+            style={wideProductsLayout && Math.abs(formAlignDy) > 0.5 ? { transform: `translateY(${formAlignDy}px)` } : undefined}
+          >
           {draft ? (
-            <>
-              <div style={{ border: '1px solid var(--line)', padding: 20, marginBottom: 20, background: 'var(--bg-2)' }}>
-                <div className="mono" style={{ color: 'var(--ink-3)', marginBottom: 12, fontSize: 10 }}>РЕДАГУВАННЯ</div>
-                {[
-                  ['name', 'Назва'],
-                  ['price', 'Ціна (₴)', 'number'],
-                  ['style', 'Стиль / тип'],
-                  ['tagline', 'Короткий опис'],
-                  ['notes', 'Смак / опис'],
-                  ['pair', 'Поєднання'],
-                  ['origin', 'Походження'],
-                  ['vol', "Об'єм"],
-                  ['color', 'Колір (hex) · авто з фото'],
-                ].map(([key, label, type]) => (
-                  <div key={key} style={{ marginBottom: 12 }}>
-                    <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>{label}</label>
-                    {key === 'notes' ? (
-                      <textarea value={draft[key] || ''} onChange={(e) => setDraft({ ...draft, [key]: e.target.value })} rows={3}
-                        style={{ width: '100%', padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontFamily: 'inherit' }} />
-                    ) : (
-                      <input type={type || 'text'} value={draft[key] ?? ''} onChange={(e) => setDraft({ ...draft, [key]: key === 'price' || key === 'abv' || key === 'ibu' ? (e.target.value === '' ? '' : e.target.value) : e.target.value })}
-                        style={{ width: '100%', padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
-                    )}
-                  </div>
-                ))}
-                <div style={{ marginBottom: 12 }}>
-                  <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>ФОТО</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-                    <label className="mono" style={{
-                      display: 'inline-block', padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--accent)', cursor: 'pointer', fontSize: 10, letterSpacing: '0.06em',
-                    }}>
-                      Загрузить фото
-                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
-                        const f = e.target.files && e.target.files[0];
-                        e.target.value = '';
-                        if (!f) return;
-                        compressImageFileToDataUrl(f).then((url) => accentHexFromImageDataUrl(url).then((hex) => ({ url, hex }))).then(({ url, hex }) => {
-                          setDraft((d) => (d ? { ...d, image: url, color: hex } : d));
-                        }).catch(() => {
-                          window.alert('Не вдалося обробити файл. Спробуйте JPG або PNG.');
-                        });
-                      }} />
-                    </label>
-                    {draft.image ? (
-                      <>
-                        <button type="button" className="mono" onClick={() => setDraft({ ...draft, image: '' })}
-                          style={{ padding: '10px 14px', border: '1px solid var(--line)', background: 'transparent', color: 'var(--ink-2)', fontSize: 10 }}>
-                          Прибрати фото
-                        </button>
-                        <img src={draft.image} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 10, border: '1px solid var(--line)' }} />
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <div>
-                    <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>ABV</label>
-                    <input type="number" step="0.1" value={draft.abv ?? ''} onChange={(e) => setDraft({ ...draft, abv: e.target.value === '' ? null : Number(e.target.value) })}
-                      style={{ width: '100%', padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
-                  </div>
-                  <div>
-                    <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>IBU</label>
-                    <input type="number" value={draft.ibu ?? ''} onChange={(e) => setDraft({ ...draft, ibu: e.target.value === '' ? '' : Number(e.target.value) })}
-                      style={{ width: '100%', padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
-                  </div>
-                </div>
-                <div style={{ marginTop: 12 }}>
-                  <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>КАТЕГОРІЯ (slug)</label>
-                  <select value={draft.cat} onChange={(e) => setDraft({ ...draft, cat: e.target.value })} style={{ width: '100%', padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }}>
-                    {categories.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-                  <button type="button" className="mono" onClick={save} style={{ flex: 1, padding: 14, background: 'var(--accent)', color: '#1a1200', border: 'none', fontSize: 10 }}>Зберегти</button>
-                  <button type="button" className="mono" disabled={!products.some((p) => p.id === draft.id)}
-                    onClick={() => { if (draft && products.some((p) => p.id === draft.id)) { deleteProductId(draft.id); setSelId(null); setDraft(null); } }}
-                    style={{ padding: 14, border: '1px solid var(--danger)', color: 'var(--danger)', background: 'transparent', fontSize: 10, opacity: products.some((p) => p.id === draft.id) ? 1 : 0.4 }}>Видалити</button>
-                </div>
-              </div>
-
-              <div className="mono" style={{ color: 'var(--ink-3)', marginBottom: 10, fontSize: 10 }}>LIVE PREVIEW (ProductCard)</div>
-              <div style={{ maxWidth: 340, margin: '0 auto' }}>
-                <ProductCard
-                  product={preview}
-                  onOpen={() => {}}
-                  onAdd={() => {}}
-                  style={cardStyle}
-                  density="comfortable"
-                  mobileCardMode="solo"
-                />
-              </div>
-            </>
+            <AdminProductEditor
+              draft={draft}
+              setDraft={setDraft}
+              categories={categories}
+              products={products}
+              preview={preview}
+              cardStyle={cardStyle}
+              onSave={save}
+              onDelete={() => {
+                if (draft && products.some((p) => p.id === draft.id)) {
+                  deleteProductId(draft.id);
+                  setSelId(null);
+                  setDraft(null);
+                }
+              }}
+            />
           ) : (
             <div className="mono" style={{ color: 'var(--ink-3)', padding: 40, textAlign: 'center', border: '1px dashed var(--line)' }}>Оберіть товар або створіть новий</div>
           )}
+          </div>
         </div>
         </div>
+      </div>
+
+      {!wideProductsLayout && draft ? (
+        <div className="admin-product-edit-modal-root" role="dialog" aria-modal="true" aria-labelledby="admin-product-edit-modal-title">
+          <button
+            type="button"
+            className="admin-product-edit-modal-backdrop"
+            aria-label="Закрити"
+            onClick={() => setSelId(null)}
+          />
+          <div className="admin-product-edit-modal-panel">
+            <div className="admin-product-edit-modal-header">
+              <div id="admin-product-edit-modal-title" style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 20, minWidth: 0 }}>
+                {draft.name?.trim() ? draft.name : 'Новий товар'}
+              </div>
+              <button type="button" className="mono" onClick={() => setSelId(null)} style={{ padding: '10px 16px', border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)', fontSize: 10, flexShrink: 0 }}>
+                Закрити
+              </button>
+            </div>
+            <AdminProductEditor
+              draft={draft}
+              setDraft={setDraft}
+              categories={categories}
+              products={products}
+              preview={preview}
+              cardStyle={cardStyle}
+              onSave={save}
+              onDelete={() => {
+                if (draft && products.some((p) => p.id === draft.id)) {
+                  deleteProductId(draft.id);
+                  setSelId(null);
+                  setDraft(null);
+                }
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
       </div>
     </div>
   );
@@ -1130,13 +1307,137 @@ function reorderSocials(list, fromIndex, toIndex) {
   return next;
 }
 
+const HERO_TILE_HINTS = [
+  'Висока плитка зліва',
+  'Верх, центр',
+  'Верх, справа',
+  'Низ, центр',
+  'Низ, справа',
+];
+
 function AdminSettings() {
-  const { settings, setSettings } = useNpData();
+  const { settings, setSettings, products } = useNpData();
   const patch = (k, v) => setSettings((s) => ({ ...s, [k]: v }));
+
+  const heroSlots = useMemo(() => {
+    const a = Array.isArray(settings.heroFeaturedProductIds) ? [...settings.heroFeaturedProductIds] : [];
+    while (a.length < 5) a.push('');
+    return a.slice(0, 5);
+  }, [settings.heroFeaturedProductIds]);
+
+  const setHeroSlot = (index, productId) => {
+    const next = [...heroSlots];
+    next[index] = productId || '';
+    patch('heroFeaturedProductIds', next);
+  };
+
+  const swapHeroSlots = (i, j) => {
+    if (i < 0 || j < 0 || i > 4 || j > 4) return;
+    const next = [...heroSlots];
+    const t = next[i];
+    next[i] = next[j];
+    next[j] = t;
+    patch('heroFeaturedProductIds', next);
+  };
+
+  const patchHeroStat = (idx, field, value) => {
+    const raw = Array.isArray(settings.heroStats) ? [...settings.heroStats] : [];
+    while (raw.length < 3) raw.push({ value: '', label: '' });
+    const prev = raw[idx] && typeof raw[idx] === 'object' ? raw[idx] : {};
+    raw[idx] = { ...prev, [field]: value };
+    patch('heroStats', raw);
+  };
+
+  const statVal = (idx, field, fallback) => {
+    const raw = settings.heroStats;
+    if (!Array.isArray(raw) || !raw[idx]) return fallback;
+    const v = raw[idx][field];
+    return typeof v === 'string' ? v : fallback;
+  };
 
   return (
     <div>
-      <h2 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 36, margin: '0 0 8px' }}>Контакти</h2>
+      <h2 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 36, margin: '0 0 8px' }}>Головна сторінка</h2>
+      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>Текст банера, цифри внизу та п’ять товарів для колажу (порядок = позиції на сітці).</p>
+
+      <div className="admin-settings-card" style={{ maxWidth: 720, border: '1px solid var(--line)', padding: 24, background: 'var(--bg-2)', display: 'grid', gap: 16 }}>
+        {[
+          ['heroKicker', 'Рядок над заголовком (mono)'],
+          ['heroTitleLine1', 'Заголовок — рядок 1 (до акценту)'],
+          ['heroTitleAccent', 'Заголовок — акцентне слово (курсив, колір акценту)'],
+          ['heroTitleLine3', 'Заголовок — рядок після акценту'],
+        ].map(([k, lab]) => (
+          <div key={k}>
+            <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>{lab}</label>
+            <input value={settings[k] || ''} onChange={(e) => patch(k, e.target.value)} style={{ width: '100%', padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
+          </div>
+        ))}
+        <div>
+          <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>Абзац під заголовком</label>
+          <textarea value={settings.heroLead || ''} onChange={(e) => patch('heroLead', e.target.value)} rows={3}
+            style={{ width: '100%', padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontFamily: 'inherit' }} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>Кнопка (основна)</label>
+            <input value={settings.heroCtaPrimary || ''} onChange={(e) => patch('heroCtaPrimary', e.target.value)} style={{ width: '100%', padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
+          </div>
+          <div>
+            <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>Посилання «про нас»</label>
+            <input value={settings.heroCtaSecondary || ''} onChange={(e) => patch('heroCtaSecondary', e.target.value)} style={{ width: '100%', padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
+          </div>
+        </div>
+
+        <div className="mono" style={{ color: 'var(--ink-3)', marginTop: 8, fontSize: 10 }}>ТРИ ЦИФРИ ВНИЗУ БАНЕРА</div>
+        {[0, 1, 2].map((i) => (
+          <div key={`hstat-${i}`} style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: 10, alignItems: 'end' }}>
+            <div>
+              <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>Число</label>
+              <input
+                value={statVal(i, 'value', ['50', '11', '7'][i])}
+                onChange={(e) => patchHeroStat(i, 'value', e.target.value)}
+                style={{ width: '100%', padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }}
+              />
+            </div>
+            <div>
+              <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>Підпис</label>
+              <input
+                value={statVal(i, 'label', ['позицій у каталозі', 'років у справі', 'днів на тиждень'][i])}
+                onChange={(e) => patchHeroStat(i, 'label', e.target.value)}
+                style={{ width: '100%', padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }}
+              />
+            </div>
+          </div>
+        ))}
+
+        <div className="mono" style={{ color: 'var(--ink-3)', marginTop: 12, fontSize: 10 }}>КОЛАЖ ЗПРАВА (5 ПЛИТОК)</div>
+        <p className="mono" style={{ color: 'var(--ink-3)', fontSize: 9, margin: '-8px 0 0' }}>Порожній варіант у списку — автоматично підставить наступний товар з каталогу. Кнопки «вгору/вниз» міняють плитки місцями.</p>
+        {heroSlots.map((slotId, idx) => (
+          <div key={`hero-tile-${idx}`} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 10, alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <button type="button" className="mono" disabled={idx === 0} onClick={() => swapHeroSlots(idx, idx - 1)} title="Вище"
+                style={{ padding: '6px 10px', border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)', fontSize: 10, cursor: idx === 0 ? 'default' : 'pointer', opacity: idx === 0 ? 0.35 : 1 }}>↑</button>
+              <button type="button" className="mono" disabled={idx === 4} onClick={() => swapHeroSlots(idx, idx + 1)} title="Нижче"
+                style={{ padding: '6px 10px', border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)', fontSize: 10, cursor: idx === 4 ? 'default' : 'pointer', opacity: idx === 4 ? 0.35 : 1 }}>↓</button>
+            </div>
+            <div>
+              <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 6, fontSize: 9 }}>{HERO_TILE_HINTS[idx]}</label>
+              <select
+                value={slotId || ''}
+                onChange={(e) => setHeroSlot(idx, e.target.value)}
+                style={{ width: '100%', padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }}
+              >
+                <option value="">Авто з каталогу</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name || p.id} · {p.style || p.cat || '—'}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h2 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 36, margin: '48px 0 8px' }}>Контакти</h2>
       <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>ТЕЛЕФОН · EMAIL · АДРЕСА · СОЦМЕРЕЖІ</p>
 
       <div className="admin-settings-card" style={{ maxWidth: 560, border: '1px solid var(--line)', padding: 24, background: 'var(--bg-2)', display: 'grid', gap: 16 }}>
