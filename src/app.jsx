@@ -1,6 +1,6 @@
 // App root — публічний сайт + маршрутизація /admin/*
 const { useState: uS, useEffect: uE, useMemo: uM } = React;
-const { BrowserRouter, Routes, Route, useParams, useNavigate } = window.ReactRouterDOM || {};
+const { BrowserRouter, Routes, Route, useLocation, Navigate } = window.ReactRouterDOM || {};
 const { NpDataProvider } = window;
 
 const DEFAULTS = JSON.parse(
@@ -8,7 +8,13 @@ const DEFAULTS = JSON.parse(
     .replace('/*EDITMODE-BEGIN*/', '').replace('/*EDITMODE-END*/', '')
 );
 
-const PUBLIC_SECTIONS = new Set(['home', 'about', 'catalog', 'contacts']);
+const SECTION_BY_PATH = {
+  '/': 'home',
+  '/home': 'home',
+  '/about': 'about',
+  '/catalog': 'catalog',
+  '/contacts': 'contacts',
+};
 
 function npRouterBasename() {
   if (typeof window.__NP_BASENAME__ === 'string' && window.__NP_BASENAME__.trim() !== '') {
@@ -21,9 +27,7 @@ function npRouterBasename() {
 }
 
 function PublicSite() {
-  const params = useParams();
-  const navigate = useNavigate();
-  const section = params.section;
+  const location = useLocation();
 
   const [tweaks, setTweaks] = uS(DEFAULTS);
   const [tweakOpen, setTweakOpen] = uS(false);
@@ -39,18 +43,14 @@ function PublicSite() {
   }, [tweaks.theme]);
 
   uE(() => {
-    const raw = section || '';
-    if (raw && !PUBLIC_SECTIONS.has(raw)) {
-      navigate('/', { replace: true });
-      return;
-    }
-    const id = !raw || raw === 'home' ? 'home' : raw;
+    const path = (location.pathname || '/').replace(/\/$/, '') || '/';
+    const id = SECTION_BY_PATH[path] || 'home';
     requestAnimationFrame(() => {
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     setActive(id);
-  }, [section, navigate]);
+  }, [location.pathname]);
 
   uE(() => {
     const ids = ['home', 'about', 'catalog', 'contacts'];
@@ -150,7 +150,12 @@ function Root() {
       <BrowserRouter basename={npRouterBasename()}>
         <Routes>
           <Route path="/admin/*" element={<AdminRoutes />} />
-          <Route path="/:section?" element={<PublicSite />} />
+          <Route path="/" element={<PublicSite />} />
+          <Route path="/home" element={<PublicSite />} />
+          <Route path="/about" element={<PublicSite />} />
+          <Route path="/catalog" element={<PublicSite />} />
+          <Route path="/contacts" element={<PublicSite />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </NpDataProvider>
