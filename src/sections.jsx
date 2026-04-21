@@ -1,6 +1,7 @@
 // Page sections: Nav, Hero, About, Popular, Catalog, Contacts, Footer
 const { useState: useS, useEffect: useE, useMemo: useM, useRef: useR } = React;
 const useNpData = window.useNpData;
+const RR = window.ReactRouterDOM;
 
 // ============== NAV ==============
 const Nav = ({ cartCount, onCartOpen, active }) => {
@@ -31,11 +32,18 @@ const Nav = ({ cartCount, onCartOpen, active }) => {
     ['about', 'Про нас'],
     ['contacts', 'Контакти'],
   ];
+  const pathFor = (id) => (id === 'home' ? '/' : `/${id}`);
   const scrollTo = (id) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setMenuOpen(false);
   };
+  const navBtnStyle = (id) => ({
+    position: 'relative', paddingBottom: 4,
+    color: active === id ? 'var(--ink)' : 'var(--ink-2)',
+    background: 'none', border: 'none', cursor: 'pointer', font: 'inherit',
+    textAlign: 'inherit', textDecoration: 'none', display: 'inline-block',
+  });
   return (
     <>
     <nav className="site-nav" style={{
@@ -51,13 +59,27 @@ const Nav = ({ cartCount, onCartOpen, active }) => {
       transition: 'all .35s ease',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 28, height: 28, border: '1px solid var(--accent)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
-          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.3">
-            <path d="M6 4h8l-1 12H7L6 4z" />
-            <path d="M7 7h6" />
-          </svg>
-        </div>
-        <span className="mono nav-brand-text" style={{ fontSize: 12, letterSpacing: '0.18em' }}>НАШЕ · ПИВО</span>
+        {RR?.Link ? (
+          <RR.Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'inherit' }}>
+            <div style={{ width: 28, height: 28, border: '1px solid var(--accent)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.3">
+                <path d="M6 4h8l-1 12H7L6 4z" />
+                <path d="M7 7h6" />
+              </svg>
+            </div>
+            <span className="mono nav-brand-text" style={{ fontSize: 12, letterSpacing: '0.18em' }}>НАШЕ · ПИВО</span>
+          </RR.Link>
+        ) : (
+          <>
+            <div style={{ width: 28, height: 28, border: '1px solid var(--accent)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.3">
+                <path d="M6 4h8l-1 12H7L6 4z" />
+                <path d="M7 7h6" />
+              </svg>
+            </div>
+            <span className="mono nav-brand-text" style={{ fontSize: 12, letterSpacing: '0.18em' }}>НАШЕ · ПИВО</span>
+          </>
+        )}
       </div>
       {isNarrow ? (
         <div className="nav-mobile-actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -102,14 +124,17 @@ const Nav = ({ cartCount, onCartOpen, active }) => {
       ) : (
       <div className="nav-links-desktop" style={{ display: 'flex', gap: 32 }}>
         {links.map(([id, label]) => (
-          <button key={id} onClick={() => scrollTo(id)} className="mono"
-            style={{
-              position: 'relative', paddingBottom: 4,
-              color: active === id ? 'var(--ink)' : 'var(--ink-2)',
-            }}>
-            {label}
-            {active === id && <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, background: 'var(--accent)' }} />}
-          </button>
+          RR?.Link ? (
+            <RR.Link key={id} to={pathFor(id)} className="mono" style={navBtnStyle(id)}>
+              {label}
+              {active === id && <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, background: 'var(--accent)' }} />}
+            </RR.Link>
+          ) : (
+            <button key={id} type="button" onClick={() => scrollTo(id)} className="mono" style={navBtnStyle(id)}>
+              {label}
+              {active === id && <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, background: 'var(--accent)' }} />}
+            </button>
+          )
         ))}
       </div>
       )}
@@ -144,18 +169,33 @@ const Nav = ({ cartCount, onCartOpen, active }) => {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {links.map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => scrollTo(id)}
-              className="mono"
-              style={{
-                textAlign: 'left', padding: '16px 0', borderBottom: '1px solid var(--line)',
-                color: active === id ? 'var(--ink)' : 'var(--ink-2)', fontSize: 13,
-              }}
-            >
-              {label}
-            </button>
+            RR?.Link ? (
+              <RR.Link
+                key={id}
+                to={pathFor(id)}
+                onClick={() => setMenuOpen(false)}
+                className="mono"
+                style={{
+                  textAlign: 'left', padding: '16px 0', borderBottom: '1px solid var(--line)',
+                  color: active === id ? 'var(--ink)' : 'var(--ink-2)', fontSize: 13, textDecoration: 'none', display: 'block',
+                }}
+              >
+                {label}
+              </RR.Link>
+            ) : (
+              <button
+                key={id}
+                type="button"
+                onClick={() => scrollTo(id)}
+                className="mono"
+                style={{
+                  textAlign: 'left', padding: '16px 0', borderBottom: '1px solid var(--line)',
+                  color: active === id ? 'var(--ink)' : 'var(--ink-2)', fontSize: 13,
+                }}
+              >
+                {label}
+              </button>
+            )
           ))}
         </div>
         <p className="mono" style={{ marginTop: 32, color: 'var(--ink-3)', fontSize: 11 }}>UA · UAH</p>
@@ -166,8 +206,7 @@ const Nav = ({ cartCount, onCartOpen, active }) => {
 };
 
 // ============== HERO ==============
-const Hero = () => {
-  return (
+const Hero = () => (
     <section id="home" data-screen-label="01 Home" className="hero-section" style={{
       minHeight: '100vh',
       padding: '120px 40px 60px',
@@ -201,21 +240,43 @@ const Hero = () => {
             Магазин пива у Нікополі. У каталозі 50 позицій — крафт, класика, імпорт. Допоможемо обрати саме те, що підійде до вашого настрою.
           </p>
           <div className="hero-cta" style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' })}
-              style={{
-                padding: '18px 28px', background: 'var(--accent)', color: '#1a1200',
-                fontFamily: 'JetBrains Mono, monospace', fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase',
-                display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-              Обрати пиво <Icon.Arrow />
-            </button>
-            <button
-              onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}
-              className="mono"
-              style={{ padding: '18px 4px', color: 'var(--ink-2)', borderBottom: '1px solid var(--line)' }}>
-              Про магазин
-            </button>
+            {RR?.Link ? (
+              <RR.Link
+                to="/catalog"
+                style={{
+                  padding: '18px 28px', background: 'var(--accent)', color: '#1a1200',
+                  fontFamily: 'JetBrains Mono, monospace', fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase',
+                  display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none',
+                }}
+              >
+                Обрати пиво <Icon.Arrow />
+              </RR.Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' })}
+                style={{
+                  padding: '18px 28px', background: 'var(--accent)', color: '#1a1200',
+                  fontFamily: 'JetBrains Mono, monospace', fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}
+              >
+                Обрати пиво <Icon.Arrow />
+              </button>
+            )}
+            {RR?.Link ? (
+              <RR.Link to="/about" className="mono" style={{ padding: '18px 4px', color: 'var(--ink-2)', borderBottom: '1px solid var(--line)', textDecoration: 'none' }}>
+                Про магазин
+              </RR.Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })}
+                className="mono"
+                style={{ padding: '18px 4px', color: 'var(--ink-2)', borderBottom: '1px solid var(--line)' }}>
+                Про магазин
+              </button>
+            )}
           </div>
         </div>
         <div className="hero-stats" style={{ display: 'flex', gap: 48, marginTop: 72, flexWrap: 'wrap' }}>
@@ -284,8 +345,7 @@ const Hero = () => {
         </div>
       </div>
     </section>
-  );
-};
+);
 
 // ============== ABOUT ==============
 const About = () => {

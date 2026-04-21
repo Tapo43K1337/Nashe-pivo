@@ -2,14 +2,366 @@
 <html lang="uk">
 <head>
 <meta charset="utf-8" />
-<meta http-equiv="refresh" content="0;url=Nashe%20Pivo.html" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Наше Пиво</title>
-<link rel="canonical" href="Nashe%20Pivo.html" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Наше Пиво — крафтова пивоварня</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    /* Amber Night — default */
+    --bg: #0E0E0C;
+    --bg-2: #15140F;
+    --surface: #1A1814;
+    --ink: #F2EBDC;
+    --ink-2: #C8BFAE;
+    --ink-3: #7A7365;
+    --line: #2A2721;
+    --accent: #D89B3C;
+    --accent-2: #E8B766;
+    --danger: #B8553C;
+  }
+  [data-theme="forest"] {
+    --bg: #0C1410;
+    --bg-2: #101914;
+    --surface: #162019;
+    --ink: #EDE6D2;
+    --ink-2: #B7B29B;
+    --ink-3: #6E7567;
+    --line: #223028;
+    --accent: #C89B4A;
+    --accent-2: #DDB877;
+    --danger: #B8553C;
+  }
+  [data-theme="cream"] {
+    --bg: #F2EBDC;
+    --bg-2: #EADFCB;
+    --surface: #FFFFFF;
+    --ink: #14140F;
+    --ink-2: #3F3A30;
+    --ink-3: #807766;
+    --line: #D6CBB5;
+    --accent: #A15C1C;
+    --accent-2: #C27527;
+    --danger: #8E3A24;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  #boot-hint {
+    padding: 28px 24px;
+    max-width: 420px;
+    margin: 0 auto;
+    color: var(--ink-2);
+    font-size: 14px;
+    line-height: 1.55;
+    text-align: center;
+  }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+    transition: background .4s ease, color .4s ease;
+  }
+  h1, h2, h3, h4 { font-family: 'Fraunces', 'Times New Roman', serif; font-weight: 400; letter-spacing: -0.02em; margin: 0; }
+  .mono { font-family: 'JetBrains Mono', monospace; letter-spacing: 0.02em; text-transform: uppercase; font-size: 11px; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  input, select { font-family: inherit; color: inherit; }
+  a { color: inherit; text-decoration: none; }
+
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { scrollbar-width: none; }
+
+  /* Placeholder SVG banner */
+  .ph-stripe {
+    background-image: repeating-linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--ink) 6%, transparent) 0 8px,
+      transparent 8px 16px
+    );
+  }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .fadeUp { animation: fadeUp .7s ease both; }
+
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  .catalog-sort-list button {
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .catalog-sort-list button:hover {
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface)) !important;
+    color: var(--ink) !important;
+  }
+
+  @media (max-width: 899px) {
+    nav.site-nav { padding-left: 16px !important; padding-right: 16px !important; }
+    .nav-brand-text { letter-spacing: 0.12em !important; font-size: 11px !important; }
+  }
+
+  @media (max-width: 768px) {
+    .hero-section {
+      grid-template-columns: 1fr !important;
+      padding: 96px 20px 56px !important;
+      min-height: auto !important;
+    }
+    .hero-photos { display: none !important; }
+    .hero-stats { gap: 24px 32px !important; margin-top: 48px !important; }
+    .hero-stats > div > div:first-child { font-size: 34px !important; }
+    .hero-cta { width: 100%; }
+    .hero-cta button { flex: 1; min-width: 0; justify-content: center; }
+    section,
+    .about-section,
+    .catalog-section,
+    .contacts-section { padding-left: 20px !important; padding-right: 20px !important; }
+    .about-section { padding-top: 96px !important; padding-bottom: 72px !important; }
+    .catalog-section { padding-top: 96px !important; padding-bottom: 72px !important; }
+    .contacts-section { padding-top: 96px !important; padding-bottom: 56px !important; }
+    .about-grid { grid-template-columns: 1fr !important; gap: 28px !important; margin-bottom: 64px !important; }
+    .about-heading { font-size: clamp(34px, 9vw, 52px) !important; }
+    .pillars-grid { grid-template-columns: 1fr !important; }
+    .pillars-grid > div { border-left: none !important; border-top: 1px solid var(--line) !important; }
+    .pillars-grid > div:first-child { border-top: none !important; }
+    .catalog-header { align-items: flex-start !important; flex-direction: column !important; margin-bottom: 28px !important; }
+    .catalog-tabs-row {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      flex-wrap: nowrap;
+      margin-bottom: 18px !important;
+      scrollbar-width: none;
+    }
+    .catalog-tabs-row::-webkit-scrollbar { display: none; }
+    .catalog-tabs-row button { flex: 0 0 auto; white-space: nowrap; }
+    .prod-card--mob .flip-inner > div:first-of-type {
+      border-radius: 14px;
+      border-color: color-mix(in srgb, var(--line) 55%, transparent) !important;
+      box-shadow: 0 20px 56px rgba(0, 0, 0, 0.45);
+    }
+    .prod-card--mob-solo .flip-inner > div:first-of-type {
+      border-radius: 18px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+    }
+    .prod-card--mob .flip-inner > div:last-of-type {
+      border-radius: 14px;
+    }
+    .prod-card--mob-solo .flip-inner > div:last-of-type {
+      border-radius: 18px;
+    }
+    .catalog-heading { font-size: clamp(36px, 10vw, 56px) !important; }
+    .catalog-meta { text-align: left !important; }
+    .catalog-filters {
+      grid-template-columns: 1fr !important;
+      gap: 20px !important;
+      padding-bottom: 24px !important;
+    }
+    .contacts-heading { font-size: clamp(36px, 10vw, 56px) !important; }
+    .contacts-grid { grid-template-columns: 1fr !important; }
+    .contacts-grid > div:first-child { border-bottom: none !important; }
+    .fake-map-wrap {
+      border-left: none !important;
+      border-top: 1px solid var(--line) !important;
+      min-height: 300px !important;
+    }
+    .site-footer {
+      padding: 40px 20px calc(28px + env(safe-area-inset-bottom, 0px)) !important;
+      background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 42%) !important;
+    }
+    .footer-grid {
+      grid-template-columns: 1fr 1fr !important;
+      column-gap: 18px !important;
+      row-gap: 26px !important;
+      margin-bottom: 36px !important;
+    }
+    .footer-grid > div:first-child {
+      grid-column: 1 / -1;
+      padding-bottom: 22px;
+      margin-bottom: 2px;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 85%, transparent);
+    }
+    .footer-grid > div:first-child h3 {
+      font-size: clamp(24px, 6.5vw, 30px) !important;
+      margin-bottom: 10px !important;
+    }
+    .footer-grid > div:first-child p {
+      max-width: none !important;
+      font-size: 14px !important;
+      line-height: 1.55 !important;
+    }
+    .footer-grid > div:not(:first-child) .mono {
+      margin-bottom: 10px !important;
+      font-size: 10px !important;
+      letter-spacing: 0.1em !important;
+      color: var(--ink-3) !important;
+    }
+    .footer-grid > div:not(:first-child) .mono::after {
+      content: '';
+      display: block;
+      width: 28px;
+      height: 2px;
+      margin-top: 8px;
+      background: color-mix(in srgb, var(--accent) 55%, transparent);
+      border-radius: 1px;
+    }
+    .footer-grid > div:not(:first-child) a {
+      display: block;
+      padding: 8px 0;
+      font-size: 14px !important;
+      border-radius: 8px;
+      margin: 0 -6px;
+      padding-left: 6px;
+      padding-right: 6px;
+    }
+    .footer-grid > div:not(:first-child) a:active {
+      background: color-mix(in srgb, var(--ink) 7%, transparent);
+    }
+    .footer-meta {
+      flex-direction: column !important;
+      align-items: center !important;
+      text-align: center !important;
+      gap: 14px !important;
+      padding-top: 22px !important;
+      border-top-color: color-mix(in srgb, var(--line) 75%, transparent) !important;
+    }
+    .footer-meta span {
+      display: block;
+      max-width: 320px;
+      line-height: 1.5 !important;
+    }
+    .footer-meta span:first-child { color: var(--ink-2) !important; font-size: 11px !important; letter-spacing: 0.04em !important; text-transform: none !important; }
+    .footer-meta span:last-child {
+      font-size: 10px !important;
+      letter-spacing: 0.08em !important;
+      padding: 9px 16px !important;
+      border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--surface) 45%, transparent);
+      color: var(--ink-3) !important;
+    }
+    .prod-modal-overlay {
+      display: flex !important;
+      align-items: stretch !important;
+      justify-content: center !important;
+      padding: 0 !important;
+      padding-top: env(safe-area-inset-top, 0) !important;
+    }
+    .prod-modal {
+      display: flex !important;
+      flex-direction: column !important;
+      grid-template-columns: unset !important;
+      max-height: 100dvh !important;
+      height: 100dvh !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      border-radius: 0 !important;
+      border-left: none !important;
+      border-right: none !important;
+      overflow: hidden !important;
+      margin: 0 !important;
+    }
+    .prod-modal-visual {
+      min-height: 0 !important;
+      height: min(32vh, 260px) !important;
+      max-height: 280px !important;
+      flex: 0 0 auto !important;
+    }
+    .prod-modal-body {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      padding: 14px 16px calc(18px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+    .prod-modal-close {
+      top: calc(10px + env(safe-area-inset-top, 0px)) !important;
+      right: 12px !important;
+      background: color-mix(in srgb, var(--bg) 92%, transparent) !important;
+      backdrop-filter: blur(8px) !important;
+    }
+    .prod-modal-title {
+      font-size: clamp(22px, 6.2vw, 32px) !important;
+      margin: 8px 0 10px !important;
+    }
+    .prod-modal-kicker { font-size: 10px !important; letter-spacing: 0.14em !important; }
+    .prod-modal-tagline { font-size: 14px !important; line-height: 1.45 !important; }
+    .prod-modal-dl { gap: 10px !important; }
+    .prod-modal-divider {
+      margin: 12px 0 !important;
+      background: color-mix(in srgb, var(--line) 65%, transparent) !important;
+    }
+    .prod-modal-price { font-size: 28px !important; }
+    .prod-modal-footer-row { margin-bottom: 12px !important; }
+    .prod-modal-add { padding: 14px 16px !important; font-size: 11px !important; }
+    .def-row { grid-template-columns: 1fr !important; gap: 2px !important; }
+    .def-row dd { font-size: 13px !important; line-height: 1.45 !important; }
+    .cart-drawer { max-width: 100% !important; border-left: none !important; }
+    .checkout-modal-overlay {
+      padding: 0 !important;
+      align-items: stretch !important;
+      padding-top: env(safe-area-inset-top, 0) !important;
+    }
+    .checkout-modal {
+      max-width: 100% !important;
+      max-height: 100dvh !important;
+      height: 100dvh !important;
+      border-radius: 0 !important;
+      border-left: none !important;
+      border-right: none !important;
+      box-shadow: none !important;
+    }
+  }
+
+  @media (min-width: 769px) and (max-width: 1100px) {
+    .catalog-filters { grid-template-columns: 1fr 1fr !important; }
+  }
+
+  .admin-root { min-height: 100vh; }
+  .admin-table th, .admin-table td { vertical-align: middle; }
+  @media (max-width: 900px) {
+    .admin-root { flex-direction: column !important; }
+    .admin-sidebar { width: 100% !important; min-height: 0 !important; border-right: none !important; border-bottom: 1px solid var(--line); }
+    .admin-main { padding: 20px 16px !important; }
+    .admin-content-grid { grid-template-columns: 1fr !important; }
+  }
+</style>
 </head>
-<body style="margin:0;background:#0E0E0C;color:#C8BFAE;font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh">
-  <p style="text-align:center;padding:24px">
-    <a href="Nashe%20Pivo.html" style="color:#D89B3C;font-size:18px">Відкрити сайт →</a>
+<body>
+<div id="root">
+  <p id="boot-hint" class="mono" style="text-transform:none;letter-spacing:0.02em;font-size:13px">
+    Завантаження інтерфейсу… Якщо екран довго порожній — увімкніть JavaScript, вимкніть блокувальник реклами для цього сайту або спробуйте інший браузер / мережу (інколи блокується CDN).
   </p>
+</div>
+
+<script type="application/json" id="__tweak_defaults">
+/*EDITMODE-BEGIN*/{
+  "theme": "amber",
+  "cardStyle": "flip",
+  "density": "comfortable",
+  "showGrain": true
+}/*EDITMODE-END*/
+</script>
+
+<!-- Production + jsDelivr: fewer блокувань і помилок SRI, ніж unpkg + development -->
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@remix-run/router@1.21.0/dist/router.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-router@6.28.0/dist/umd/react-router.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-router-dom@6.28.0/dist/umd/react-router-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.9/babel.min.js"></script>
+<script>window.__NP_ADMIN_PASSWORD__ = 'nashepivo';</script>
+
+<script type="text/babel" src="./src/data.jsx"></script>
+<script type="text/babel" src="./src/np_store.jsx"></script>
+<script type="text/babel" src="./src/icons.jsx"></script>
+<script type="text/babel" src="./src/bottle.jsx"></script>
+<script type="text/babel" src="./src/components.jsx"></script>
+<script type="text/babel" src="./src/sections.jsx"></script>
+<script type="text/babel" src="./src/tweaks.jsx"></script>
+<script type="text/babel" src="./src/admin.jsx"></script>
+<script type="text/babel" src="./src/app.jsx"></script>
 </body>
 </html>

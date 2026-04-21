@@ -1,6 +1,6 @@
 // App root — публічний сайт + маршрутизація /admin/*
 const { useState: uS, useEffect: uE, useMemo: uM } = React;
-const { BrowserRouter, Routes, Route } = window.ReactRouterDOM || {};
+const { BrowserRouter, Routes, Route, useParams, useNavigate } = window.ReactRouterDOM || {};
 const { NpDataProvider } = window;
 
 const DEFAULTS = JSON.parse(
@@ -8,7 +8,13 @@ const DEFAULTS = JSON.parse(
     .replace('/*EDITMODE-BEGIN*/', '').replace('/*EDITMODE-END*/', '')
 );
 
+const PUBLIC_SECTIONS = new Set(['home', 'about', 'catalog', 'contacts']);
+
 function PublicSite() {
+  const params = useParams();
+  const navigate = useNavigate();
+  const section = params.section;
+
   const [tweaks, setTweaks] = uS(DEFAULTS);
   const [tweakOpen, setTweakOpen] = uS(false);
 
@@ -21,6 +27,20 @@ function PublicSite() {
   uE(() => {
     document.documentElement.dataset.theme = tweaks.theme;
   }, [tweaks.theme]);
+
+  uE(() => {
+    const raw = section || '';
+    if (raw && !PUBLIC_SECTIONS.has(raw)) {
+      navigate('/', { replace: true });
+      return;
+    }
+    const id = !raw || raw === 'home' ? 'home' : raw;
+    requestAnimationFrame(() => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    setActive(id);
+  }, [section, navigate]);
 
   uE(() => {
     const ids = ['home', 'about', 'catalog', 'contacts'];
@@ -111,7 +131,7 @@ function Root() {
   if (!BrowserRouter || !window.AdminRoutes) {
     return (
       <NpDataProvider>
-        <PublicSite />
+        <p style={{ padding: 24, color: '#C8BFAE', fontFamily: 'system-ui' }}>Не вдалося завантажити маршрутизатор. Оновіть сторінку або перевірте підключення скриптів.</p>
       </NpDataProvider>
     );
   }
@@ -120,7 +140,7 @@ function Root() {
       <BrowserRouter>
         <Routes>
           <Route path="/admin/*" element={<AdminRoutes />} />
-          <Route path="/*" element={<PublicSite />} />
+          <Route path="/:section?" element={<PublicSite />} />
         </Routes>
       </BrowserRouter>
     </NpDataProvider>

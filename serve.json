@@ -1,6 +1,9 @@
 {
   "rewrites": [
-    { "source": "/admin", "destination": "/Nashe%20Pivo.html" },
-    { "source": "/admin/**", "destination": "/Nashe%20Pivo.html" }
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/admin/**", "destination": "/index.html" },
+    { "source": "/about", "destination": "/index.html" },
+    { "source": "/catalog", "destination": "/index.html" },
+    { "source": "/contacts", "destination": "/index.html" }
   ]
 }
