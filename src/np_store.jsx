@@ -230,7 +230,9 @@ function isAdminPasswordConfigured() {
 function adminLogin(password) {
   const expected = typeof window !== 'undefined' ? window.__NP_ADMIN_PASSWORD__ : '';
   if (typeof expected !== 'string' || !expected.length) return false;
-  if (password === expected) {
+  const got = typeof password === 'string' ? password.trim() : '';
+  const want = expected.trim();
+  if (got === want) {
     sessionStorage.setItem(ADMIN_SESSION_KEY, '1');
     return true;
   }

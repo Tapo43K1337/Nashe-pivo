@@ -34,9 +34,14 @@ function AdminLogin() {
   };
   return (
     <div className="admin-login-wrap" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24, background: 'var(--bg)' }}>
-      <form onSubmit={submit} style={{ width: '100%', maxWidth: 400, border: '1px solid var(--line)', padding: 32, background: 'var(--bg-2)', textAlign: 'center' }}>
-        <span className="mono" style={{ display: 'block', color: 'var(--ink-3)' }}>АДМІН</span>
-        <h1 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 32, margin: '12px 0 24px' }}>Вхід</h1>
+      <form onSubmit={submit} style={{ width: '100%', maxWidth: 400, border: '1px solid var(--line)', padding: 32, background: 'var(--bg-2)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', marginBottom: 4 }}>
+          <span className="mono" style={{ color: 'var(--ink-3)', textAlign: 'center' }}>АДМІН</span>
+          <h1 style={{
+            fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 32, margin: '12px 0 20px',
+            width: '100%', textAlign: 'center', alignSelf: 'stretch',
+          }}>Вхід</h1>
+        </div>
         {(missingFile || !configured) ? (
           <p style={{ color: 'var(--danger)', fontSize: 13, lineHeight: 1.5, marginBottom: 16, textAlign: 'left' }}>
             Пароль не налаштовано: відсутній <span className="mono" style={{ color: 'var(--ink)' }}>config.secrets.js</span> або він порожній.
