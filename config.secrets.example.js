@@ -1,4 +1,2 @@
-/* Скопіюйте цей файл як config.secrets.js і задайте пароль.
-   config.secrets.js у .gitignore — не потрапляє в репозиторій.
-   Для GitHub Pages без локального файлу: secret NP_ADMIN_PASSWORD + workflow deploy-pages.yml */
-window.__NP_ADMIN_PASSWORD__ = '';
+/* Не обов’язково. Пароль за замовчуванням уже в index.html / 404.html — test1337.
+   Цей файл можна підключити замість інлайну, якщо зберете його як config.secrets.js (див. .gitignore). */

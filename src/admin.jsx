@@ -22,7 +22,6 @@ function AdminLogin() {
   const nav = useNavigate();
   const [pwd, setPwd] = useState('');
   const [err, setErr] = useState('');
-  const missingFile = typeof window !== 'undefined' && window.__NP_ADMIN_CONFIG_MISSING__;
   const configured = typeof isAdminPasswordConfigured === 'function' && isAdminPasswordConfigured();
   const submit = (e) => {
     e.preventDefault();
@@ -42,11 +41,9 @@ function AdminLogin() {
             width: '100%', textAlign: 'center', alignSelf: 'stretch',
           }}>Вхід</h1>
         </div>
-        {(missingFile || !configured) ? (
+        {!configured ? (
           <p style={{ color: 'var(--danger)', fontSize: 13, lineHeight: 1.5, marginBottom: 16, textAlign: 'left' }}>
-            Пароль не налаштовано: відсутній <span className="mono" style={{ color: 'var(--ink)' }}>config.secrets.js</span> або він порожній.
-            Скопіюйте <span className="mono" style={{ color: 'var(--ink)' }}>config.secrets.example.js</span> → <span className="mono" style={{ color: 'var(--ink)' }}>config.secrets.js</span> і задайте пароль.
-            На GitHub Pages: repository secret <span className="mono" style={{ color: 'var(--ink)' }}>NP_ADMIN_PASSWORD</span> і деплой через Actions (файл <span className="mono" style={{ color: 'var(--ink)' }}>.github/workflows/deploy-pages.yml</span>).
+            Пароль не задано: у HTML перед скриптами додайте <span className="mono" style={{ color: 'var(--ink)' }}>window.__NP_ADMIN_PASSWORD__</span>.
           </p>
         ) : null}
         <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 8, fontSize: 10, textAlign: 'left' }}>ПАРОЛЬ</label>
