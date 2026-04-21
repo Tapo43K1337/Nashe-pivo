@@ -98,6 +98,7 @@ function AdminSidebar({ menuExpanded, onToggleMenu, onNavigate }) {
         </div>
         <button
           type="button"
+          className="admin-sidebar-menu-toggle"
           aria-expanded={menuExpanded}
           aria-controls="admin-sidebar-nav"
           aria-label={menuExpanded ? 'Згорнути меню' : 'Розгорнути меню'}
@@ -137,13 +138,13 @@ function AdminSidebar({ menuExpanded, onToggleMenu, onNavigate }) {
 
 function AdminShell() {
   const [menuExpanded, setMenuExpanded] = useState(() => {
+    const mobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches;
     try {
       const raw = sessionStorage.getItem('np-admin-menu-expanded');
-      if (raw === '0') return false;
       if (raw === '1') return true;
+      if (raw === '0' && mobile) return false;
     } catch (e) {}
-    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches) return false;
-    return true;
+    return mobile ? false : true;
   });
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches);
 
@@ -153,6 +154,14 @@ function AdminShell() {
     mq.addEventListener('change', fn);
     return () => mq.removeEventListener('change', fn);
   }, []);
+
+  useEffect(() => {
+    if (isMobile) return;
+    setMenuExpanded(true);
+    try {
+      sessionStorage.setItem('np-admin-menu-expanded', '1');
+    } catch (e) {}
+  }, [isMobile]);
 
   useEffect(() => {
     if (!isMobile || !menuExpanded) {
@@ -868,7 +877,7 @@ function AdminContent() {
   return (
     <div>
       <h2 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 36, margin: '0 0 8px' }}>Товари</h2>
-      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>На великому екрані каталог прокручується ліворуч; обраний товар підводиться на вид, форма — праворуч. Категорія в рядку товару.</p>
+      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>На широкому екрані список ліворуч, форма редагування — праворуч після вибору товару. Сторінка прокручується як одне ціле. Категорія в рядку товару.</p>
 
       <div className="admin-content-grid admin-products-layout" style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
         <div ref={catalogScrollRef} className="admin-content-main-col">

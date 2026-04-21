@@ -389,6 +389,9 @@ const About = () => {
 };
 
 // ============== POPULAR & CATALOG ==============
+const CATALOG_HOME_PREVIEW_MOBILE = 5;
+const CATALOG_HOME_PREVIEW_DESKTOP = 21;
+
 const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
   const { products } = useNpData();
   const [cat, setCat] = useS('all'); // all / beer / snacks
@@ -399,6 +402,7 @@ const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
   const sortWrapRef = useR(null);
   const [maxPrice, setMaxPrice] = useS(500);
   const [vw, setVw] = useS(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const [catalogExpanded, setCatalogExpanded] = useS(false);
 
   const SORT_OPTIONS = useM(() => [
     ['pop', 'Популярні'],
@@ -426,6 +430,10 @@ const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
     window.addEventListener('resize', r, { passive: true });
     return () => window.removeEventListener('resize', r);
   }, []);
+
+  useE(() => {
+    setCatalogExpanded(false);
+  }, [cat, style, strength, sort, maxPrice]);
 
   const catSlugSet = useM(() => [...new Set(products.map((p) => p.cat).filter(Boolean))].sort(), [products]);
   const catTabs = useM(() => [
@@ -467,6 +475,12 @@ const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
 
   const wantCols = density === 'compact' ? 4 : 3;
   const mobileCatalog = vw < 900;
+  const homePreviewLimit = mobileCatalog ? CATALOG_HOME_PREVIEW_MOBILE : CATALOG_HOME_PREVIEW_DESKTOP;
+  const displayed = useM(() => {
+    if (catalogExpanded || filtered.length <= homePreviewLimit) return filtered;
+    return filtered.slice(0, homePreviewLimit);
+  }, [catalogExpanded, filtered, homePreviewLimit]);
+  const showExpandCta = filtered.length > 0 && !catalogExpanded && filtered.length > homePreviewLimit;
   const cols = !mobileCatalog
     ? (vw < 1100 ? Math.min(wantCols, 2) : wantCols)
     : vw < 560
@@ -486,7 +500,11 @@ const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
             </h2>
           </div>
           <div className="mono catalog-meta" style={{ color: 'var(--ink-3)', textAlign: 'right' }}>
-            <div>{filtered.length} / {products.length} позицій</div>
+            <div>
+              {showExpandCta
+                ? `Показано ${displayed.length} з ${filtered.length} за фільтром · ${products.length} у каталозі`
+                : `${filtered.length} / ${products.length} позицій`}
+            </div>
             <div style={{ marginTop: 4 }}>
               {mobileCardMode === 'solo' ? 'Торкніть картку — деталі' : mobileCardMode === 'duo' ? 'Дві колонки — торкніть для деталей' : 'Наведіть — щоб перевернути'}
             </div>
@@ -607,11 +625,31 @@ const Catalog = ({ onOpen, onAdd, cardStyle, density }) => {
               gap: catalogGridGap,
             }}
           >
-            {filtered.map(p => (
+            {displayed.map(p => (
               <ProductCard key={p.id} product={p} onOpen={onOpen} onAdd={onAdd} style={cardStyle} density={density} mobileCardMode={mobileCardMode} />
             ))}
           </div>
         )}
+        {showExpandCta ? (
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 44 }}>
+            <button
+              type="button"
+              className="mono"
+              onClick={() => setCatalogExpanded(true)}
+              style={{
+                padding: '16px 40px',
+                border: '1px solid var(--accent)',
+                background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                fontSize: 11,
+                letterSpacing: '0.12em',
+              }}
+            >
+              Переглянути весь асортимент
+            </button>
+          </div>
+        ) : null}
       </div>
     </section>
   );
