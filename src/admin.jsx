@@ -85,13 +85,16 @@ function AdminSidebar({ menuExpanded, onToggleMenu }) {
   };
   return (
     <aside className={`admin-sidebar${menuExpanded ? '' : ' admin-sidebar--collapsed'}`} style={{ width: 260, flexShrink: 0, borderRight: '1px solid var(--line)', background: 'var(--bg-2)', display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <div style={{
-        padding: '24px 20px', borderBottom: '1px solid var(--line)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10,
-      }}>
-        <div style={{ minWidth: 0 }}>
+      <div
+        className="admin-sidebar-header"
+        style={{
+          padding: '24px 20px', borderBottom: '1px solid var(--line)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10,
+        }}
+      >
+        <div className="admin-sidebar-brand" style={{ minWidth: 0 }}>
           <span className="mono" style={{ color: 'var(--accent)' }}>НАШЕ ПИВО</span>
-          <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 17, lineHeight: 1.2, marginTop: 6 }}>Панель Администратора</div>
+          <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 17, lineHeight: 1.2, marginTop: 6 }}>Панель адміністратора</div>
         </div>
         <button
           type="button"
@@ -718,21 +721,20 @@ function AdminContent() {
   const [selId, setSelId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [newCatName, setNewCatName] = useState('');
-  const [newCatSlug, setNewCatSlug] = useState('');
-  const [newCatParent, setNewCatParent] = useState('');
-  const [slugManual, setSlugManual] = useState(false);
-
-  const catRoots = useMemo(() => categories.filter((c) => !c.parentId), [categories]);
 
   const submitNewCategory = (e) => {
     e.preventDefault();
-    if (!newCatName.trim()) return;
-    const slug = (newCatSlug.trim() || slugifyCategoryName(newCatName) || `cat-${Date.now()}`).toLowerCase().replace(/[^a-z0-9-]/g, '') || `cat-${Date.now()}`;
-    addCategory({ name: newCatName.trim(), slug, parentId: newCatParent || null });
+    const name = newCatName.trim();
+    if (!name) return;
+    let base = slugifyCategoryName(name).toLowerCase().replace(/[^a-z0-9-]/g, '') || `cat-${Date.now()}`;
+    let slug = base;
+    let n = 0;
+    while (categories.some((c) => c.slug === slug)) {
+      n += 1;
+      slug = `${base}-${n}`;
+    }
+    addCategory({ name, slug, parentId: null });
     setNewCatName('');
-    setNewCatSlug('');
-    setNewCatParent('');
-    setSlugManual(false);
   };
 
   useEffect(() => {
@@ -778,27 +780,18 @@ function AdminContent() {
   return (
     <div>
       <h2 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 36, margin: '0 0 8px' }}>Товари</h2>
-      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>Товари · категорії · прив’язка · прев’ю картки</p>
+      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>Рядок — редагування справа; категорія в тому ж рядку. Прев’ю картки — у колонці праворуч.</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(280px,380px)', gap: 32, alignItems: 'start' }} className="admin-content-grid">
         <div>
           <h3 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 22, margin: '0 0 6px' }}>Категорії</h3>
-          <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 14, fontSize: 10 }}>Поле товару «Категорія» = slug нижче</p>
+          <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 14, fontSize: 10 }}>Достатньо назви: технічний slug згенерується з неї (латиницею). Завжди коренева категорія.</p>
 
           <form onSubmit={submitNewCategory} style={{ border: '1px solid var(--line)', padding: 16, marginBottom: 16, background: 'var(--bg-2)' }}>
             <div className="mono" style={{ color: 'var(--ink-3)', marginBottom: 10, fontSize: 10 }}>НОВА КАТЕГОРІЯ</div>
-            <div style={{ display: 'grid', gap: 10 }}>
-              <input value={newCatName} onChange={(e) => {
-                const v = e.target.value;
-                setNewCatName(v);
-                if (!slugManual) setNewCatSlug(slugifyCategoryName(v));
-              }} placeholder="Назва" style={{ padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
-              <input value={newCatSlug} onChange={(e) => { setSlugManual(true); setNewCatSlug(e.target.value); }} placeholder="slug (латиницею, інакше з назви)" style={{ padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
-              <select value={newCatParent} onChange={(e) => setNewCatParent(e.target.value)} style={{ padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }}>
-                <option value="">Без батька (корінь)</option>
-                {catRoots.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <button type="submit" className="mono" style={{ padding: 12, background: 'var(--accent)', color: '#1a1200', border: 'none', fontSize: 10 }}>Додати категорію</button>
+            <div style={{ display: 'grid', gap: 10, gridTemplateColumns: '1fr auto', alignItems: 'stretch' }}>
+              <input value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="Назва категорії" style={{ padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
+              <button type="submit" className="mono" style={{ padding: '12px 18px', background: 'var(--accent)', color: '#1a1200', border: 'none', fontSize: 10, whiteSpace: 'nowrap' }}>Додати</button>
             </div>
           </form>
 
@@ -818,49 +811,67 @@ function AdminContent() {
           <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
             <button type="button" className="mono" onClick={startNew} style={{ padding: '12px 16px', background: 'var(--accent)', color: '#1a1200', border: 'none', fontSize: 10 }}>+ Новий товар</button>
           </div>
+          <h3 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 22, margin: '0 0 10px' }}>Каталог</h3>
+          <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 12, fontSize: 10 }}>Клік по назві / номеру — форма праворуч. Зміна категорії не змінює вибір рядка.</p>
           <div style={{ border: '1px solid var(--line)' }}>
             {products.map((p, i) => (
-              <button key={p.id} type="button" onClick={() => setSelId(p.id)}
+              <div
+                key={p.id}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '48px minmax(0, 1fr)',
-                  gap: 14,
+                  gridTemplateColumns: '48px minmax(0, 1fr) minmax(132px, 220px)',
+                  gap: 12,
                   alignItems: 'center',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '14px 16px 14px 12px',
-                  border: 'none',
+                  padding: '14px 14px 14px 12px',
                   borderBottom: '1px solid var(--line)',
                   background: selId === p.id ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'var(--bg)',
-                  color: 'var(--ink)',
-                  cursor: 'pointer',
-                }}>
-                <span aria-hidden style={{
-                  fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 26, lineHeight: 1,
-                  color: 'color-mix(in srgb, var(--accent) 55%, var(--ink-3))', textAlign: 'right', userSelect: 'none',
-                }}>{i + 1}</span>
-                <div style={{ minWidth: 0 }}>
-                  <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 9 }}>{p.style}</span>
-                  <div style={{ fontFamily: 'Fraunces, serif', fontSize: 18 }}>{p.name}</div>
-                  <div className="mono" style={{ color: 'var(--accent)', marginTop: 4, fontSize: 10 }}>{p.price} ₴</div>
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setSelId(p.id)}
+                  aria-label={`Редагувати: ${p.name}`}
+                  style={{
+                    gridColumn: '1 / 3',
+                    display: 'grid',
+                    gridTemplateColumns: '48px minmax(0, 1fr)',
+                    gap: 12,
+                    alignItems: 'center',
+                    width: '100%',
+                    minWidth: 0,
+                    padding: 0,
+                    margin: 0,
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'inherit',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    font: 'inherit',
+                  }}
+                >
+                  <span aria-hidden style={{
+                    fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 26, lineHeight: 1,
+                    color: 'color-mix(in srgb, var(--accent) 55%, var(--ink-3))', textAlign: 'right', userSelect: 'none',
+                  }}>{i + 1}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 9 }}>{p.style}</span>
+                    <div style={{ fontFamily: 'Fraunces, serif', fontSize: 18 }}>{p.name}</div>
+                    <div className="mono" style={{ color: 'var(--accent)', marginTop: 4, fontSize: 10 }}>{p.price} ₴</div>
+                  </div>
+                </button>
+                <div
+                  style={{ gridColumn: 3, justifySelf: 'stretch' }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 4, fontSize: 8 }}>КАТЕГОРІЯ</label>
+                  <select
+                    value={p.cat}
+                    onChange={(e) => assignProductCategory(p.id, e.target.value)}
+                    style={{ width: '100%', padding: 8, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontSize: 12 }}
+                  >
+                    {categories.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
+                  </select>
                 </div>
-              </button>
-            ))}
-          </div>
-
-          <h3 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 22, margin: '28px 0 10px' }}>Прив’язка товарів</h3>
-          <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 12, fontSize: 10 }}>Швидка зміна категорії для будь-якого товару</p>
-          <div style={{ border: '1px solid var(--line)' }}>
-            {products.map((p, i) => (
-              <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '40px minmax(0,1fr) auto', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid var(--line)', gap: 12 }}>
-                <span aria-hidden style={{
-                  fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 22, lineHeight: 1,
-                  color: 'color-mix(in srgb, var(--accent) 50%, var(--ink-3))', textAlign: 'right', userSelect: 'none',
-                }}>{i + 1}</span>
-                <span style={{ fontFamily: 'Fraunces, serif', minWidth: 0 }}>{p.name}</span>
-                <select value={p.cat} onChange={(e) => assignProductCategory(p.id, e.target.value)} style={{ padding: 8, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }}>
-                  {categories.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
-                </select>
               </div>
             ))}
           </div>
@@ -1017,9 +1028,9 @@ function AdminSettings() {
             className="admin-social-row"
             style={{
               display: 'grid',
-              gridTemplateColumns: '28px 1fr 2fr 40px',
+              gridTemplateColumns: '28px 1fr 2fr 44px',
               gap: 8,
-              alignItems: 'center',
+              alignItems: 'stretch',
               padding: '4px 0',
               borderBottom: '1px solid color-mix(in srgb, var(--line) 50%, transparent)',
             }}
@@ -1043,31 +1054,44 @@ function AdminSettings() {
                 lineHeight: 1,
                 textAlign: 'center',
                 padding: '6px 0',
+                alignSelf: 'center',
               }}
             >⋮⋮</span>
             <input value={s.label} onChange={(e) => {
               const socials = [...(settings.socials || [])];
               socials[i] = { ...socials[i], label: e.target.value };
               patch('socials', socials);
-            }} placeholder="Назва" style={{ padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
+            }} placeholder="Назва" style={{
+              padding: '12px 10px', minHeight: 44, boxSizing: 'border-box', width: '100%',
+              background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)',
+            }} />
             <input value={s.url} onChange={(e) => {
               const socials = [...(settings.socials || [])];
               socials[i] = { ...socials[i], url: e.target.value };
               patch('socials', socials);
-            }} placeholder="https://…" style={{ padding: 10, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
+            }} placeholder="https://…" style={{
+              padding: '12px 10px', minHeight: 44, boxSizing: 'border-box', width: '100%',
+              background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)',
+            }} />
             <button
               type="button"
               className="mono"
               title="Видалити"
               onClick={() => patch('socials', (settings.socials || []).filter((_, j) => j !== i))}
               style={{
-                padding: 8,
+                minHeight: 44,
+                boxSizing: 'border-box',
+                padding: 0,
                 border: '1px solid var(--line)',
-                background: 'transparent',
+                background: 'var(--surface)',
                 color: 'var(--danger)',
-                fontSize: 14,
+                fontSize: 20,
                 lineHeight: 1,
                 cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
               }}
             >×</button>
           </div>
