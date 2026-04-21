@@ -545,143 +545,94 @@
   }
   @media (max-width: 900px) {
     .admin-root {
-      display: block !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
       position: relative;
       min-height: 100dvh;
       overflow-x: hidden;
-      --np-admin-mtop: calc(52px + env(safe-area-inset-top, 0px));
     }
-    .admin-drawer-backdrop {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      top: var(--np-admin-mtop);
-      z-index: 1998;
-      margin: 0;
-      padding: 0;
-      border: none;
-      background: rgba(0, 0, 0, 0.48);
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-    .admin-mobile-topbar {
-      position: fixed;
+    .admin-mobile-header {
+      position: sticky;
       top: 0;
-      left: 0;
-      right: 0;
       z-index: 2005;
+      flex: 0 0 auto;
+      width: 100%;
       box-sizing: border-box;
-      height: var(--np-admin-mtop);
-      padding: env(safe-area-inset-top, 0px) max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px));
-      display: grid;
-      grid-template-columns: 44px 1fr 44px;
-      align-items: center;
-      gap: 8px;
       background: var(--bg-2);
       border-bottom: 1px solid var(--line);
-      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.28);
+      padding: max(10px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 12px max(12px, env(safe-area-inset-left, 0px));
+      box-shadow: 0 2px 14px rgba(0, 0, 0, 0.22);
     }
-    .admin-mobile-topbar-menu {
-      width: 44px;
-      height: 44px;
-      margin: 0;
-      padding: 0;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--surface);
+    .admin-mobile-header-brand {
+      min-width: 0;
+    }
+    .admin-mobile-header-logo {
       color: var(--accent);
-      font-size: 20px;
-      line-height: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-family: system-ui, "Segoe UI", Roboto, sans-serif;
-      touch-action: manipulation;
-    }
-    .admin-mobile-topbar-title {
-      text-align: center;
       font-size: 10px;
       letter-spacing: 0.1em;
-      color: var(--ink-3);
     }
-    .admin-mobile-topbar-spacer {
-      width: 44px;
-      height: 44px;
+    .admin-mobile-header-subtitle {
+      font-family: Fraunces, serif;
+      font-style: italic;
+      font-size: 17px;
+      line-height: 1.2;
+      margin-top: 6px;
+    }
+    .admin-mobile-topnav {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 14px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+    }
+    .admin-mobile-topnav .admin-side-link {
+      display: block;
+      flex: 0 0 auto;
+      white-space: normal;
+      margin-left: 0 !important;
+      border-left: 2px solid transparent !important;
+      border-bottom: none !important;
+      padding: 12px 4px !important;
+      text-decoration: none;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--ink-2);
+    }
+    .admin-mobile-topnav .admin-side-link.is-active {
+      border-bottom: none !important;
+      border-left-color: var(--accent) !important;
+      color: var(--accent);
+    }
+    .admin-mobile-header-foot {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .admin-mobile-site-link {
+      display: block;
+      text-align: center;
+      margin-top: 4px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--ink-3);
+      text-decoration: none;
     }
     .admin-main {
       width: 100% !important;
       max-width: 100% !important;
       min-width: 0 !important;
-      flex: none !important;
-      padding: calc(12px + var(--np-admin-mtop)) 12px 24px !important;
+      flex: 1 1 auto !important;
+      padding: 16px 12px 24px !important;
       overflow-x: hidden !important;
     }
     .admin-main h2 { font-size: clamp(26px, 8vw, 34px) !important; }
     .admin-sidebar {
-      position: fixed !important;
-      left: 0;
-      top: var(--np-admin-mtop);
-      bottom: auto;
-      height: calc(100dvh - var(--np-admin-mtop)) !important;
-      max-height: calc(100dvh - var(--np-admin-mtop)) !important;
-      width: min(288px, 90vw) !important;
-      min-width: 0 !important;
-      max-width: none !important;
-      z-index: 1999;
-      transform: translate3d(-105%, 0, 0) !important;
-      transition: transform 0.22s ease;
-      border-right: 1px solid var(--line) !important;
-      border-bottom: none !important;
-      box-shadow: 14px 0 36px rgba(0, 0, 0, 0.45);
-    }
-    .admin-sidebar:not(.admin-sidebar--collapsed) {
-      transform: translate3d(0, 0, 0) !important;
-    }
-    .admin-sidebar--collapsed {
-      transform: translate3d(-105%, 0, 0) !important;
-      width: min(288px, 90vw) !important;
-      min-width: 0 !important;
-    }
-    .admin-sidebar--collapsed .admin-sidebar-brand {
-      display: block !important;
-    }
-    .admin-sidebar--collapsed .admin-sidebar-header {
-      flex-direction: row !important;
-      align-items: flex-start !important;
-      justify-content: space-between !important;
-      padding: 16px 14px 12px !important;
-      gap: 10px !important;
-    }
-    .admin-sidebar-header {
-      padding: 16px 14px 12px !important;
-    }
-    .admin-sidebar nav {
-      display: flex !important;
-      flex-direction: column !important;
-      flex-wrap: nowrap !important;
-      overflow-x: visible !important;
-      overflow-y: auto !important;
-      gap: 0;
-      padding: 12px 0 16px !important;
-      -webkit-overflow-scrolling: touch;
-      flex: 1 1 auto;
-      min-height: 0;
-      scrollbar-width: thin;
-    }
-    .admin-sidebar nav::-webkit-scrollbar { height: 0; width: 0; }
-    .admin-side-link {
-      flex: 0 0 auto;
-      white-space: normal;
-      margin-left: -1px !important;
-      border-left: 2px solid transparent !important;
-      border-bottom: none !important;
-      padding: 12px 14px !important;
-    }
-    .admin-side-link.is-active {
-      border-bottom: none !important;
-      border-left-color: var(--accent) !important;
+      display: none !important;
     }
     .admin-catalog-row {
       display: flex !important;

@@ -10,7 +10,7 @@ const {
   useLocation,
 } = window.ReactRouterDOM;
 
-const { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } = React;
+const { useState, useMemo, useEffect, useRef, useCallback } = React;
 const { useNpData, isAdminSession, isAdminPasswordConfigured, adminLogin, adminLogout } = window;
 
 function RequireAuth() {
@@ -71,7 +71,36 @@ function AdminLogoutBtn() {
   );
 }
 
-function AdminSidebar({ menuExpanded, onToggleMenu, onNavigate, isMobile }) {
+/** Мобільна адмінка: навігація лише в шапці, без бічного drawer */
+function AdminMobileHeader() {
+  const loc = useLocation();
+  const link = (segment, label) => {
+    const full = `/admin/${segment}`;
+    const on = loc.pathname === full || loc.pathname.startsWith(`${full}/`);
+    return (
+      <Link key={segment} to={full} className={`mono admin-side-link${on ? ' is-active' : ''}`}>{label}</Link>
+    );
+  };
+  return (
+    <header className="admin-mobile-header" aria-label="Адмін-панель">
+      <div className="admin-mobile-header-brand">
+        <span className="mono admin-mobile-header-logo">НАШЕ ПИВО</span>
+        <div className="admin-mobile-header-subtitle">Панель адміністратора</div>
+      </div>
+      <nav className="admin-mobile-topnav" aria-label="Розділи">
+        {link('orders', 'Замовлення · клієнти')}
+        {link('products', 'Товари')}
+        {link('settings', 'Головна · контакти')}
+      </nav>
+      <div className="admin-mobile-header-foot">
+        <AdminLogoutBtn />
+        <Link to="/" className="mono admin-mobile-site-link">На сайт</Link>
+      </div>
+    </header>
+  );
+}
+
+function AdminSidebar({ menuExpanded, onToggleMenu, onNavigate }) {
   const loc = useLocation();
   const link = (segment, label) => {
     const full = `/admin/${segment}`;
@@ -96,50 +125,32 @@ function AdminSidebar({ menuExpanded, onToggleMenu, onNavigate, isMobile }) {
           <span className="mono" style={{ color: 'var(--accent)' }}>НАШЕ ПИВО</span>
           <div style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 17, lineHeight: 1.2, marginTop: 6 }}>Панель адміністратора</div>
         </div>
-        {isMobile ? (
-          <button
-            type="button"
-            className="mono admin-sidebar-close-mobile"
-            onClick={onNavigate}
-            style={{
-              flexShrink: 0,
-              padding: '10px 14px',
-              border: '1px solid var(--line)',
-              background: 'var(--surface)',
-              color: 'var(--ink)',
-              fontSize: 10,
-              letterSpacing: '0.08em',
-              cursor: 'pointer',
-            }}
-          >Закрити</button>
-        ) : (
-          <button
-            type="button"
-            className="admin-sidebar-menu-toggle"
-            aria-expanded={menuExpanded}
-            aria-controls="admin-sidebar-nav"
-            aria-label={menuExpanded ? 'Згорнути меню' : 'Розгорнути меню'}
-            title={menuExpanded ? 'Згорнути меню' : 'Розгорнути меню'}
-            onClick={onToggleMenu}
-            style={{
-              flexShrink: 0,
-              width: 40,
-              minWidth: 40,
-              minHeight: 40,
-              padding: 0,
-              border: '1px solid var(--line)',
-              background: 'var(--surface)',
-              color: 'var(--accent)',
-              fontSize: 22,
-              lineHeight: 1,
-              cursor: 'pointer',
-              fontFamily: 'system-ui, "Segoe UI", Roboto, sans-serif',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >{menuExpanded ? '\u2039' : '\u203A'}</button>
-        )}
+        <button
+          type="button"
+          className="admin-sidebar-menu-toggle"
+          aria-expanded={menuExpanded}
+          aria-controls="admin-sidebar-nav"
+          aria-label={menuExpanded ? 'Згорнути меню' : 'Розгорнути меню'}
+          title={menuExpanded ? 'Згорнути меню' : 'Розгорнути меню'}
+          onClick={onToggleMenu}
+          style={{
+            flexShrink: 0,
+            width: 40,
+            minWidth: 40,
+            minHeight: 40,
+            padding: 0,
+            border: '1px solid var(--line)',
+            background: 'var(--surface)',
+            color: 'var(--accent)',
+            fontSize: 22,
+            lineHeight: 1,
+            cursor: 'pointer',
+            fontFamily: 'system-ui, "Segoe UI", Roboto, sans-serif',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >{menuExpanded ? '\u2039' : '\u203A'}</button>
       </div>
       <nav id="admin-sidebar-nav" style={{ padding: '16px 0', flex: 1 }}>
         {link('orders', 'Замовлення · клієнти')}
@@ -181,16 +192,6 @@ function AdminShell() {
     } catch (e) {}
   }, [isMobile]);
 
-  useEffect(() => {
-    if (!isMobile || !menuExpanded) {
-      document.body.style.overflow = '';
-      return undefined;
-    }
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, [isMobile, menuExpanded]);
-
   const toggleMenu = () => {
     setMenuExpanded((v) => {
       const n = !v;
@@ -199,36 +200,12 @@ function AdminShell() {
     });
   };
 
-  const closeMobileMenu = useCallback(() => {
-    if (!isMobile) return;
-    setMenuExpanded(false);
-    try { sessionStorage.setItem('np-admin-menu-expanded', '0'); } catch (e) {}
-  }, [isMobile]);
-
-  const drawerAttr = isMobile ? (menuExpanded ? 'open' : 'closed') : 'off';
+  const drawerAttr = !isMobile ? (menuExpanded ? 'open' : 'closed') : 'off';
 
   return (
     <div className="admin-root" data-np-mobile-drawer={drawerAttr} style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)', color: 'var(--ink)' }}>
-      {isMobile && menuExpanded ? (
-        <button type="button" className="admin-drawer-backdrop" aria-label="Закрити меню" onClick={closeMobileMenu} />
-      ) : null}
-      {isMobile ? (
-        <header className="admin-mobile-topbar">
-          <button
-            type="button"
-            className="admin-mobile-topbar-menu"
-            onClick={toggleMenu}
-            aria-expanded={menuExpanded}
-            aria-label={menuExpanded ? 'Закрити меню' : 'Відкрити меню'}
-            title={menuExpanded ? 'Закрити' : 'Меню'}
-          >
-            {menuExpanded ? '\u2715' : '\u2630'}
-          </button>
-          <span className="admin-mobile-topbar-title mono">Адмін</span>
-          <span className="admin-mobile-topbar-spacer" aria-hidden="true" />
-        </header>
-      ) : null}
-      <AdminSidebar isMobile={isMobile} menuExpanded={menuExpanded} onToggleMenu={toggleMenu} onNavigate={closeMobileMenu} />
+      {isMobile ? <AdminMobileHeader /> : null}
+      {!isMobile ? <AdminSidebar menuExpanded={menuExpanded} onToggleMenu={toggleMenu} onNavigate={() => {}} /> : null}
       <main className="admin-main" style={{ flex: 1, minWidth: 0, padding: '32px 40px', overflow: 'auto' }}>
         <Outlet />
       </main>
@@ -263,6 +240,81 @@ function AdminOrderSklad({ o }) {
         <p className="mono" style={{ color: 'var(--ink-3)', fontSize: 10 }}>Немає позицій у збереженому замовленні</p>
       )}
     </>
+  );
+}
+
+function AdminOrderDetailModal({ order, onClose }) {
+  useEffect(() => {
+    if (!order) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [order, onClose]);
+
+  if (!order) return null;
+
+  const stLabel = ORDER_STATUSES.find(([k]) => k === order.status)?.[1] || order.status;
+  const delivery = order.delivery != null && Number(order.delivery) > 0 ? Number(order.delivery) : null;
+
+  return (
+    <div className="admin-product-edit-modal-root" role="dialog" aria-modal="true" aria-labelledby="admin-order-detail-modal-title">
+      <button type="button" className="admin-product-edit-modal-backdrop" aria-label="Закрити" onClick={onClose} />
+      <div className="admin-product-edit-modal-panel">
+        <div className="admin-product-edit-modal-header">
+          <div id="admin-order-detail-modal-title" style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 20, minWidth: 0 }}>
+            Замовлення {order.id}
+          </div>
+          <button type="button" className="mono" onClick={onClose} style={{ padding: '10px 16px', border: '1px solid var(--line)', background: 'var(--surface)', color: 'var(--ink)', fontSize: 10, flexShrink: 0 }}>
+            Закрити
+          </button>
+        </div>
+        <div style={{ fontSize: 14, color: 'var(--ink-2)', display: 'grid', gap: 14 }}>
+          <p style={{ margin: 0 }}>
+            <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 10 }}>ДАТА</span>
+            <br />
+            {new Date(order.createdAt).toLocaleString('uk-UA')}
+          </p>
+          <p style={{ margin: 0 }}>
+            <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 10 }}>ІМ’Я</span>
+            <br />
+            {order.name || '—'}
+          </p>
+          <p style={{ margin: 0 }}>
+            <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 10 }}>ТЕЛЕФОН</span>
+            <br />
+            {order.phone || '—'}
+          </p>
+          <p style={{ margin: 0 }}>
+            <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 10 }}>СУМА</span>
+            <br />
+            {order.total} ₴
+            {delivery != null ? <span className="mono" style={{ display: 'block', marginTop: 6, fontSize: 10, color: 'var(--ink-3)' }}>Доставка {delivery} ₴</span> : null}
+          </p>
+          <p style={{ margin: 0 }}>
+            <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 10 }}>СТАТУС</span>
+            <br />
+            {stLabel}
+          </p>
+          {order.source ? (
+            <p style={{ margin: 0 }}>
+              <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 10 }}>ДЖЕРЕЛО</span>
+              <br />
+              {order.source === 'manual' ? 'Вручну' : String(order.source)}
+            </p>
+          ) : null}
+          <div style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+            <AdminOrderSklad o={order} />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -448,10 +500,11 @@ function AdminOrders() {
   const { orders, setOrderStatus, getClients, setCustomerFlag, products, addOrder } = useNpData();
   const [q, setQ] = useState('');
   const [st, setSt] = useState('all');
-  const [sel, setSel] = useState(null);
+  const [detailOrder, setDetailOrder] = useState(null);
   const [tab, setTab] = useState('orders');
-  const [clientOrderOpenId, setClientOrderOpenId] = useState(null);
   const [manualOpen, setManualOpen] = useState(false);
+
+  const closeDetailModal = useCallback(() => setDetailOrder(null), []);
 
   const filtered = useMemo(() => {
     let list = orders;
@@ -548,8 +601,8 @@ function AdminOrders() {
                       </select>
                     </td>
                     <td data-label="Дії" style={{ padding: 12 }}>
-                      <button type="button" className="mono" onClick={() => setSel(sel === o.id ? null : o.id)} style={{ color: 'var(--accent)', background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', fontSize: 10 }}>
-                        {sel === o.id ? 'Сховати' : 'Деталі'}
+                      <button type="button" className="mono" onClick={() => setDetailOrder(o)} style={{ color: 'var(--accent)', background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', fontSize: 10 }}>
+                        Деталі
                       </button>
                     </td>
                   </tr>
@@ -558,21 +611,6 @@ function AdminOrders() {
             </table>
             {filtered.length === 0 ? <div className="mono" style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}>Немає замовлень</div> : null}
           </div>
-
-          {sel ? (
-            <div style={{ marginTop: 24, padding: 24, border: '1px solid var(--line)', background: 'var(--bg-2)' }}>
-              {(() => {
-                const o = orders.find((x) => x.id === sel);
-                if (!o) return null;
-                return (
-                  <>
-                    <h3 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', marginTop: 0 }}>Замовлення {o.id}</h3>
-                    <AdminOrderSklad o={o} />
-                  </>
-                );
-              })()}
-            </div>
-          ) : null}
         </>
       ) : (
         <div style={{ display: 'grid', gap: 16 }}>
@@ -609,7 +647,7 @@ function AdminOrders() {
                       <button
                         type="button"
                         className="mono"
-                        onClick={() => setClientOrderOpenId(clientOrderOpenId === o.id ? null : o.id)}
+                        onClick={() => setDetailOrder(o)}
                         style={{
                           color: 'var(--accent)',
                           background: 'none',
@@ -620,26 +658,9 @@ function AdminOrders() {
                           padding: 0,
                         }}
                       >
-                        {clientOrderOpenId === o.id ? 'Сховати склад' : 'Що замовив'}
+                        Деталі
                       </button>
                     </div>
-                    {clientOrderOpenId === o.id ? (
-                      <div
-                        style={{
-                          marginTop: 10,
-                          marginLeft: 0,
-                          padding: 14,
-                          border: '1px solid var(--line)',
-                          background: 'var(--surface)',
-                          maxWidth: 520,
-                        }}
-                      >
-                        <p className="mono" style={{ color: 'var(--ink-3)', fontSize: 10, marginTop: 0, marginBottom: 10 }}>
-                          № {o.id}
-                        </p>
-                        <AdminOrderSklad o={o} />
-                      </div>
-                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -648,6 +669,13 @@ function AdminOrders() {
           {clients.length === 0 ? <div className="mono" style={{ color: 'var(--ink-3)' }}>Ще немає клієнтів (замовлення з’являться тут)</div> : null}
         </div>
       )}
+
+      {detailOrder ? (
+        <AdminOrderDetailModal
+          order={orders.find((x) => x.id === detailOrder.id) || detailOrder}
+          onClose={closeDetailModal}
+        />
+      ) : null}
     </div>
   );
 }
@@ -918,16 +946,6 @@ function AdminContent() {
   const [newCatName, setNewCatName] = useState('');
   const [catEdit, setCatEdit] = useState(null);
   const catalogScrollRef = useRef(null);
-  const asideInnerRef = useRef(null);
-  const [formAlignDy, setFormAlignDy] = useState(0);
-  const [wideProductsLayout, setWideProductsLayout] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 901px)').matches);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 901px)');
-    const fn = () => setWideProductsLayout(mq.matches);
-    mq.addEventListener('change', fn);
-    return () => mq.removeEventListener('change', fn);
-  }, []);
 
   const submitNewCategory = (e) => {
     e.preventDefault();
@@ -973,81 +991,27 @@ function AdminContent() {
     if (p) setDraft({ ...p, image: p.image || '' });
   }, [selId, products]);
 
-  useLayoutEffect(() => {
-    if (!selId || !catalogScrollRef.current) {
-      setFormAlignDy(0);
-      return;
-    }
+  useEffect(() => {
+    if (!selId || !catalogScrollRef.current) return;
     const row = catalogScrollRef.current.querySelector(`[data-admin-product-id="${selId}"]`);
-    if (!row) {
-      setFormAlignDy(0);
-      return;
-    }
-    if (wideProductsLayout) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-
-    let raf = 0;
-    const measureFormAlign = () => {
-      if (!wideProductsLayout) {
-        setFormAlignDy(0);
-        return;
-      }
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        if (!catalogScrollRef.current || !asideInnerRef.current || !selId) {
-          setFormAlignDy(0);
-          return;
-        }
-        const r = catalogScrollRef.current.querySelector(`[data-admin-product-id="${selId}"]`);
-        if (!r) {
-          setFormAlignDy(0);
-          return;
-        }
-        const rr = r.getBoundingClientRect();
-        const ar = asideInnerRef.current.getBoundingClientRect();
-        let dy = rr.top - ar.top;
-        const vh = window.innerHeight;
-        const newTop = ar.top + dy;
-        const newBottom = ar.bottom + dy;
-        if (newTop < 10) dy += 10 - newTop;
-        if (newBottom > vh - 14) dy -= newBottom - (vh - 14);
-        setFormAlignDy(dy);
-      });
-    };
-
-    measureFormAlign();
-    const t = window.setTimeout(measureFormAlign, 280);
-    const main = document.querySelector('.admin-main');
-    main?.addEventListener('scroll', measureFormAlign, { passive: true });
-    window.addEventListener('resize', measureFormAlign, { passive: true });
-    let ro;
-    if (asideInnerRef.current && typeof ResizeObserver !== 'undefined') {
-      ro = new ResizeObserver(measureFormAlign);
-      ro.observe(asideInnerRef.current);
-    }
-    return () => {
-      window.clearTimeout(t);
-      main?.removeEventListener('scroll', measureFormAlign);
-      window.removeEventListener('resize', measureFormAlign);
-      cancelAnimationFrame(raf);
-      if (ro) ro.disconnect();
-    };
-  }, [selId, products, wideProductsLayout]);
+    row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [selId]);
 
   useEffect(() => {
-    if (wideProductsLayout || !draft) return undefined;
+    if (!draft) return undefined;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
-  }, [wideProductsLayout, draft]);
+  }, [draft]);
 
   useEffect(() => {
-    if (wideProductsLayout || !draft) return undefined;
+    if (!draft) return undefined;
     const onKey = (e) => {
       if (e.key === 'Escape') setSelId(null);
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [wideProductsLayout, draft]);
+  }, [draft]);
 
   const preview = useMemo(() => (draft ? buildPreviewProduct(draft, categories) : null), [draft, categories]);
 
@@ -1083,7 +1047,7 @@ function AdminContent() {
   return (
     <div>
       <h2 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 36, margin: '0 0 8px' }}>Товари</h2>
-      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>Категорії — зверху на всю ширину. На телефоні редагування — у спливаючому вікні; на широкому екрані форма праворуч і підтягується до рядка товару.</p>
+      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>Категорії та каталог — на всю ширину. Редагування товару відкривається у вікні після кліку по рядку або «Новий товар».</p>
 
       <div className="admin-products-page">
         <div className="admin-products-categories">
@@ -1137,13 +1101,13 @@ function AdminContent() {
           </div>
         </div>
 
-        <div className="admin-content-grid admin-products-layout" style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
-        <div ref={catalogScrollRef} className="admin-content-main-col">
+        <div className="admin-content-grid admin-products-layout" style={{ display: 'block', width: '100%' }}>
+        <div ref={catalogScrollRef} className="admin-content-main-col" style={{ width: '100%', maxWidth: '100%' }}>
           <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
             <button type="button" className="mono" onClick={startNew} style={{ padding: '12px 16px', background: 'var(--accent)', color: '#1a1200', border: 'none', fontSize: 10 }}>+ Новий товар</button>
           </div>
           <h3 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 22, margin: '0 0 10px' }}>Каталог</h3>
-          <p className="mono admin-catalog-hint" style={{ color: 'var(--ink-3)', marginBottom: 12, fontSize: 10 }}>Клік по рядку — на телефоні відкривається вікно редагування; на широкому екрані форма праворуч.</p>
+          <p className="mono admin-catalog-hint" style={{ color: 'var(--ink-3)', marginBottom: 12, fontSize: 10 }}>Клік по рядку відкриває вікно редагування та перегляду картки.</p>
           <div style={{ border: '1px solid var(--line)' }}>
             {products.map((p, i) => {
               const catName = categories.find((c) => c.slug === p.cat)?.name || p.cat || '—';
@@ -1225,40 +1189,9 @@ function AdminContent() {
             })}
           </div>
         </div>
-
-        <div className="admin-content-aside-wrap" style={{ display: wideProductsLayout ? undefined : 'none' }}>
-        <div className="admin-content-aside">
-          <div
-            ref={asideInnerRef}
-            className="admin-content-aside-inner"
-            style={wideProductsLayout && Math.abs(formAlignDy) > 0.5 ? { transform: `translateY(${formAlignDy}px)` } : undefined}
-          >
-          {draft ? (
-            <AdminProductEditor
-              draft={draft}
-              setDraft={setDraft}
-              categories={categories}
-              products={products}
-              preview={preview}
-              cardStyle={cardStyle}
-              onSave={save}
-              onDelete={() => {
-                if (draft && products.some((p) => p.id === draft.id)) {
-                  deleteProductId(draft.id);
-                  setSelId(null);
-                  setDraft(null);
-                }
-              }}
-            />
-          ) : (
-            <div className="mono" style={{ color: 'var(--ink-3)', padding: 40, textAlign: 'center', border: '1px dashed var(--line)' }}>Оберіть товар або створіть новий</div>
-          )}
-          </div>
-        </div>
-        </div>
       </div>
 
-      {!wideProductsLayout && draft ? (
+      {draft ? (
         <div className="admin-product-edit-modal-root" role="dialog" aria-modal="true" aria-labelledby="admin-product-edit-modal-title">
           <button
             type="button"
