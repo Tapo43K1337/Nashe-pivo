@@ -34,17 +34,17 @@ function AdminLogin() {
   };
   return (
     <div className="admin-login-wrap" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24, background: 'var(--bg)' }}>
-      <form onSubmit={submit} style={{ width: '100%', maxWidth: 400, border: '1px solid var(--line)', padding: 32, background: 'var(--bg-2)' }}>
-        <span className="mono" style={{ color: 'var(--ink-3)' }}>АДМІН</span>
+      <form onSubmit={submit} style={{ width: '100%', maxWidth: 400, border: '1px solid var(--line)', padding: 32, background: 'var(--bg-2)', textAlign: 'center' }}>
+        <span className="mono" style={{ display: 'block', color: 'var(--ink-3)' }}>АДМІН</span>
         <h1 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 32, margin: '12px 0 24px' }}>Вхід</h1>
         {(missingFile || !configured) ? (
-          <p style={{ color: 'var(--danger)', fontSize: 13, lineHeight: 1.5, marginBottom: 16 }}>
+          <p style={{ color: 'var(--danger)', fontSize: 13, lineHeight: 1.5, marginBottom: 16, textAlign: 'left' }}>
             Пароль не налаштовано: відсутній <span className="mono" style={{ color: 'var(--ink)' }}>config.secrets.js</span> або він порожній.
             Скопіюйте <span className="mono" style={{ color: 'var(--ink)' }}>config.secrets.example.js</span> → <span className="mono" style={{ color: 'var(--ink)' }}>config.secrets.js</span> і задайте пароль.
             На GitHub Pages: repository secret <span className="mono" style={{ color: 'var(--ink)' }}>NP_ADMIN_PASSWORD</span> і деплой через Actions (файл <span className="mono" style={{ color: 'var(--ink)' }}>.github/workflows/deploy-pages.yml</span>).
           </p>
         ) : null}
-        <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 8, fontSize: 10 }}>ПАРОЛЬ</label>
+        <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 8, fontSize: 10, textAlign: 'left' }}>ПАРОЛЬ</label>
         <input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} autoComplete="current-password" disabled={!configured}
           style={{ width: '100%', padding: 14, marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontSize: 15, opacity: configured ? 1 : 0.5 }} />
         {err ? <p style={{ color: 'var(--danger)', fontSize: 14, marginBottom: 12 }}>{err}</p> : null}
