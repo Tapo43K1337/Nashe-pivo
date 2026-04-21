@@ -10,6 +10,16 @@ const DEFAULTS = JSON.parse(
 
 const PUBLIC_SECTIONS = new Set(['home', 'about', 'catalog', 'contacts']);
 
+function npRouterBasename() {
+  if (typeof window.__NP_BASENAME__ === 'string' && window.__NP_BASENAME__.trim() !== '') {
+    let b = window.__NP_BASENAME__.trim();
+    if (!b.startsWith('/')) b = '/' + b;
+    b = b.replace(/\/$/, '');
+    return b || undefined;
+  }
+  return undefined;
+}
+
 function PublicSite() {
   const params = useParams();
   const navigate = useNavigate();
@@ -137,7 +147,7 @@ function Root() {
   }
   return (
     <NpDataProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={npRouterBasename()}>
         <Routes>
           <Route path="/admin/*" element={<AdminRoutes />} />
           <Route path="/:section?" element={<PublicSite />} />

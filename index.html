@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <title>Наше Пиво — крафтова пивоварня</title>
+<meta name="np-github-repo" content="Nashe-pivo" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -330,6 +331,27 @@
 </style>
 </head>
 <body>
+<script>
+(function () {
+  try {
+    var parts = location.pathname.split('/').filter(Boolean);
+    for (var j = 0; j < parts.length; j++) {
+      var dec = decodeURIComponent(parts[j]).replace(/\+/g, ' ');
+      if (/^nashe\s+pivo\.html$/i.test(dec)) {
+        var repo = j > 0 ? parts[j - 1] : 'Nashe-pivo';
+        var tail = parts.slice(j + 1).join('/');
+        location.replace(location.origin + '/' + repo + '/' + (tail || '') + location.search + location.hash);
+        return;
+      }
+    }
+  } catch (e) {}
+  var m = document.querySelector('meta[name="np-github-repo"]');
+  var repo = m && m.getAttribute('content');
+  repo = repo && String(repo).replace(/^\/+|\/+$/g, '');
+  if (repo && /\.github\.io$/i.test(location.hostname))
+    window.__NP_BASENAME__ = '/' + repo;
+})();
+</script>
 <div id="root">
   <p id="boot-hint" class="mono" style="text-transform:none;letter-spacing:0.02em;font-size:13px">
     Завантаження інтерфейсу… Якщо екран довго порожній — увімкніть JavaScript, вимкніть блокувальник реклами для цього сайту або спробуйте інший браузер / мережу (інколи блокується CDN).
