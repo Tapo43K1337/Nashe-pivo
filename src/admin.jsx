@@ -122,9 +122,6 @@ function AdminMobileHeader() {
           </span>
         </button>
       </div>
-      {menuOpen ? (
-        <button type="button" className="admin-mobile-menu-backdrop" aria-label="Закрити меню" onClick={closeMenu} />
-      ) : null}
       <div id={panelId} className={`admin-mobile-nav-panel${menuOpen ? ' is-open' : ''}`} hidden={!menuOpen}>
         <nav className="admin-mobile-topnav" aria-label="Розділи">
           {link('orders', 'Замовлення · клієнти')}
@@ -315,6 +312,7 @@ function AdminOrderDetailModal({ order, onClose }) {
             Закрити
           </button>
         </div>
+        <div className="admin-product-edit-modal-body">
         <div style={{ fontSize: 14, color: 'var(--ink-2)', display: 'grid', gap: 14 }}>
           <p style={{ margin: 0 }}>
             <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 10 }}>ДАТА</span>
@@ -352,6 +350,7 @@ function AdminOrderDetailModal({ order, onClose }) {
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
             <AdminOrderSklad o={order} />
           </div>
+        </div>
         </div>
       </div>
     </div>
@@ -611,13 +610,8 @@ function AdminOrders() {
 
       {tab === 'orders' ? (
         <>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 20, alignItems: 'flex-start' }}>
-            <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-              <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 8, fontSize: 10 }}>ПОШУК</label>
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ім’я, телефон, адреса, №"
-                style={{ width: '100%', padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12, flex: '0 1 auto' }}>
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
               <button
                 type="button"
                 className="mono"
@@ -634,6 +628,13 @@ function AdminOrders() {
               >
                 {manualOpen ? 'Сховати форму' : '+ Замовлення вручну'}
               </button>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'end' }}>
+              <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+                <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 8, fontSize: 10 }}>ПОШУК</label>
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ім’я, телефон, адреса, №"
+                  style={{ width: '100%', padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
+              </div>
               <div>
                 <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 8, fontSize: 10 }}>СТАТУС</label>
                 <select value={st} onChange={(e) => setSt(e.target.value)} className="mono" style={{ padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontSize: 11 }}>
@@ -1281,6 +1282,7 @@ function AdminContent() {
                 Закрити
               </button>
             </div>
+            <div className="admin-product-edit-modal-body">
             <AdminProductEditor
               draft={draft}
               setDraft={setDraft}
@@ -1297,6 +1299,7 @@ function AdminContent() {
                 }
               }}
             />
+            </div>
           </div>
         </div>
       ) : null}
