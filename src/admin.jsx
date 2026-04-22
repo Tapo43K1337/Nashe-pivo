@@ -61,40 +61,80 @@ function AdminLogin() {
   );
 }
 
-function AdminLogoutBtn() {
+function AdminLogoutBtn({ onAfter } = {}) {
   const nav = useNavigate();
   return (
-    <button type="button" className="mono" onClick={() => { adminLogout(); nav('/admin/login', { replace: true }); }}
+    <button type="button" className="mono" onClick={() => { adminLogout(); nav('/admin/login', { replace: true }); onAfter?.(); }}
       style={{ width: '100%', padding: 12, border: '1px solid var(--line)', background: 'transparent', color: 'var(--ink-3)', fontSize: 10 }}>
       Вийти
     </button>
   );
 }
 
-/** Мобільна адмінка: навігація лише в шапці, без бічного drawer */
+/** Мобільна адмінка: компактна шапка, розділи за кнопкою «меню» */
 function AdminMobileHeader() {
   const loc = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const panelId = 'admin-mobile-nav-panel';
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [loc.pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
+  const closeMenu = () => setMenuOpen(false);
+
   const link = (segment, label) => {
     const full = `/admin/${segment}`;
     const on = loc.pathname === full || loc.pathname.startsWith(`${full}/`);
     return (
-      <Link key={segment} to={full} className={`mono admin-side-link${on ? ' is-active' : ''}`}>{label}</Link>
+      <Link key={segment} to={full} onClick={closeMenu} className={`mono admin-side-link${on ? ' is-active' : ''}`}>{label}</Link>
     );
   };
+
   return (
-    <header className="admin-mobile-header" aria-label="Адмін-панель">
-      <div className="admin-mobile-header-brand">
-        <span className="mono admin-mobile-header-logo">НАШЕ ПИВО</span>
-        <div className="admin-mobile-header-subtitle">Панель адміністратора</div>
+    <header className={`admin-mobile-header${menuOpen ? ' admin-mobile-header--menu-open' : ''}`} aria-label="Адмін-панель">
+      <div className="admin-mobile-header-bar">
+        <div className="admin-mobile-header-brand">
+          <span className="mono admin-mobile-header-logo">НАШЕ ПИВО</span>
+          <div className="admin-mobile-header-subtitle">Панель адміністратора</div>
+        </div>
+        <button
+          type="button"
+          className={`admin-mobile-menu-btn mono${menuOpen ? ' is-open' : ''}`}
+          aria-expanded={menuOpen}
+          aria-controls={panelId}
+          aria-label={menuOpen ? 'Закрити меню' : 'Відкрити меню'}
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          <span className="admin-mobile-burger" aria-hidden>
+            <span />
+            <span />
+            <span />
+          </span>
+        </button>
       </div>
-      <nav className="admin-mobile-topnav" aria-label="Розділи">
-        {link('orders', 'Замовлення · клієнти')}
-        {link('products', 'Товари')}
-        {link('settings', 'Головна · контакти')}
-      </nav>
-      <div className="admin-mobile-header-foot">
-        <AdminLogoutBtn />
-        <Link to="/" className="mono admin-mobile-site-link">На сайт</Link>
+      {menuOpen ? (
+        <button type="button" className="admin-mobile-menu-backdrop" aria-label="Закрити меню" onClick={closeMenu} />
+      ) : null}
+      <div id={panelId} className={`admin-mobile-nav-panel${menuOpen ? ' is-open' : ''}`} hidden={!menuOpen}>
+        <nav className="admin-mobile-topnav" aria-label="Розділи">
+          {link('orders', 'Замовлення · клієнти')}
+          {link('products', 'Товари')}
+          {link('settings', 'Головна · контакти')}
+        </nav>
+        <div className="admin-mobile-header-foot">
+          <AdminLogoutBtn onAfter={closeMenu} />
+          <Link to="/" onClick={closeMenu} className="mono admin-mobile-site-link">На сайт</Link>
+        </div>
       </div>
     </header>
   );
