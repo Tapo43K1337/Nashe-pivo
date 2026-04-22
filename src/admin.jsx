@@ -367,10 +367,28 @@ const inputMono = {
   boxSizing: 'border-box',
 };
 
+const MANUAL_ORDER_ADDRESS = 'Точка продажу';
+
+/** Поточний вибір у селекті + кількість — додається до рядків (для збереження без окремого кліку «Додати»). */
+function mergePickIntoLines(baseLines, pid, pq, productsList) {
+  if (!pid) return baseLines;
+  const p = productsList.find((x) => x.id === pid);
+  if (!p) return baseLines;
+  const q = Math.max(1, Math.floor(Number(pq) || 1));
+  const price = Number(p.price) || 0;
+  const idx = baseLines.findIndex((x) => x.id === p.id);
+  if (idx === -1) {
+    return [...baseLines, { id: p.id, name: p.name, price, qty: q, line: price * q }];
+  }
+  const next = [...baseLines];
+  const nq = next[idx].qty + q;
+  next[idx] = { ...next[idx], qty: nq, line: price * nq };
+  return next;
+}
+
 function AdminManualOrderForm({ products, addOrder, onClose }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('Точка продажу');
   const [delivery, setDelivery] = useState('0');
   const [status, setStatus] = useState('done');
   const [lines, setLines] = useState([]);
@@ -383,12 +401,19 @@ function AdminManualOrderForm({ products, addOrder, onClose }) {
     [products],
   );
 
-  const subtotal = useMemo(
+  const listSubtotal = useMemo(
     () => lines.reduce((s, it) => s + Number(it.price) * Number(it.qty), 0),
     [lines],
   );
+  const pickDraftSubtotal = useMemo(() => {
+    if (!pickId) return 0;
+    const p = sortedProducts.find((x) => x.id === pickId);
+    if (!p) return 0;
+    return (Number(p.price) || 0) * Math.max(1, Math.floor(Number(pickQty) || 1));
+  }, [pickId, pickQty, sortedProducts]);
+  const shownSubtotal = listSubtotal + pickDraftSubtotal;
   const deliveryNum = Math.max(0, Number(delivery) || 0);
-  const total = subtotal + deliveryNum;
+  const total = shownSubtotal + deliveryNum;
 
   const addLine = () => {
     setErr('');
@@ -407,6 +432,7 @@ function AdminManualOrderForm({ products, addOrder, onClose }) {
       next[i] = { ...next[i], qty: nq, line: price * nq };
       return next;
     });
+    setPickId('');
     setPickQty('1');
   };
 
@@ -428,17 +454,20 @@ function AdminManualOrderForm({ products, addOrder, onClose }) {
       setErr('Вкажіть телефон');
       return;
     }
-    if (!lines.length) {
-      setErr('Додайте хоча б один товар');
+    const mergedLines = mergePickIntoLines(lines, pickId, pickQty, sortedProducts);
+    if (!mergedLines.length) {
+      setErr('Додайте хоча б один товар або оберіть товар і кількість');
       return;
     }
+    const mergedSubtotal = mergedLines.reduce((s, it) => s + Number(it.price) * Number(it.qty), 0);
+    const mergedTotal = mergedSubtotal + deliveryNum;
     addOrder({
       name: name.trim(),
       phone: phone.trim(),
-      address: address.trim() || 'Точка продажу',
-      total,
+      address: MANUAL_ORDER_ADDRESS,
+      total: mergedTotal,
       delivery: deliveryNum,
-      items: lines.map((i) => ({
+      items: mergedLines.map((i) => ({
         id: i.id,
         name: i.name,
         qty: i.qty,
@@ -470,10 +499,6 @@ function AdminManualOrderForm({ products, addOrder, onClose }) {
         <div>
           <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 8, fontSize: 10 }}>ТЕЛЕФОН</label>
           <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+380…" style={inputMono} />
-        </div>
-        <div style={{ gridColumn: '1 / -1' }}>
-          <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 8, fontSize: 10 }}>АДРЕСА / ПРИМІТКА</label>
-          <input value={address} onChange={(e) => setAddress(e.target.value)} style={inputMono} />
         </div>
         <div>
           <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 8, fontSize: 10 }}>ДОСТАВКА (₴)</label>
@@ -519,13 +544,20 @@ function AdminManualOrderForm({ products, addOrder, onClose }) {
           ))}
         </ul>
       ) : (
-        <p className="mono" style={{ color: 'var(--ink-3)', fontSize: 10, marginBottom: 16 }}>Список порожній — додайте товари з каталогу</p>
+        <p className="mono" style={{ color: 'var(--ink-3)', fontSize: 10, marginBottom: 16 }}>
+          {pickDraftSubtotal > 0
+            ? 'Список порожній — натисніть «Додати» або збережіть замовлення: обраний товар ураховано в сумі нижче.'
+            : 'Оберіть товар і кількість — сума з’явиться нижче; «Додати» додає рядок у список.'}
+        </p>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
         <div>
           <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 10 }}>Разом</span>
           <div style={{ fontFamily: 'Fraunces, serif', fontSize: 26, marginTop: 4 }}>{total} ₴</div>
-          <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 10 }}>товари {subtotal} ₴ + доставка {deliveryNum} ₴</span>
+          <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 10 }}>
+            товари {shownSubtotal} ₴ + доставка {deliveryNum} ₴
+            {pickDraftSubtotal > 0 && lines.length > 0 ? ` (у списку ${listSubtotal} + обрано ${pickDraftSubtotal})` : ''}
+          </span>
         </div>
         <button type="submit" className="mono" style={{ padding: '14px 28px', background: 'var(--accent)', color: '#1a1200', border: 'none', letterSpacing: '0.08em', fontSize: 11 }}>
           Зберегти замовлення
@@ -579,20 +611,13 @@ function AdminOrders() {
 
       {tab === 'orders' ? (
         <>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 20, alignItems: 'end' }}>
-            <div style={{ flex: '1 1 200px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 20, alignItems: 'flex-start' }}>
+            <div style={{ flex: '1 1 200px', minWidth: 0 }}>
               <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 8, fontSize: 10 }}>ПОШУК</label>
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ім’я, телефон, адреса, №"
                 style={{ width: '100%', padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
             </div>
-            <div>
-              <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 8, fontSize: 10 }}>СТАТУС</label>
-              <select value={st} onChange={(e) => setSt(e.target.value)} className="mono" style={{ padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontSize: 11 }}>
-                <option value="all">Усі</option>
-                {ORDER_STATUSES.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-            </div>
-            <div style={{ flex: '1 1 100%', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 12, flex: '0 1 auto' }}>
               <button
                 type="button"
                 className="mono"
@@ -604,10 +629,18 @@ function AdminOrders() {
                   color: manualOpen ? 'var(--accent)' : 'var(--ink-2)',
                   fontSize: 10,
                   letterSpacing: '0.06em',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {manualOpen ? 'Сховати форму' : '+ Замовлення вручну'}
               </button>
+              <div>
+                <label className="mono" style={{ display: 'block', color: 'var(--ink-3)', marginBottom: 8, fontSize: 10 }}>СТАТУС</label>
+                <select value={st} onChange={(e) => setSt(e.target.value)} className="mono" style={{ padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontSize: 11 }}>
+                  <option value="all">Усі</option>
+                  {ORDER_STATUSES.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -1328,12 +1361,23 @@ function AdminSettings() {
     return typeof v === 'string' ? v : fallback;
   };
 
+  const settingsCard = {
+    border: '1px solid var(--line)',
+    padding: 24,
+    background: 'var(--bg-2)',
+    display: 'grid',
+    gap: 16,
+  };
+  const settingsSubh = { fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 22, margin: 0, color: 'var(--ink)' };
+
   return (
     <div>
       <h2 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 36, margin: '0 0 8px' }}>Головна сторінка</h2>
-      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>Текст банера, цифри внизу та п’ять товарів для колажу (порядок = позиції на сітці).</p>
+      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 28, fontSize: 10 }}>Нижче — окремі блоки: текст банера, цифри під ним, товари для колажу справа (зображення з картки товару).</p>
 
-      <div className="admin-settings-card" style={{ maxWidth: 720, border: '1px solid var(--line)', padding: 24, background: 'var(--bg-2)', display: 'grid', gap: 16 }}>
+      <div className="admin-settings-card" style={{ ...settingsCard, maxWidth: 720, marginBottom: 24 }}>
+        <h3 style={settingsSubh}>Банер: заголовок, текст і кнопки</h3>
+        <p className="mono" style={{ color: 'var(--ink-3)', fontSize: 10, margin: '-8px 0 0' }}>Рядок над заголовком, три частини заголовку, абзац, підписи кнопок.</p>
         {[
           ['heroKicker', 'Рядок над заголовком (mono)'],
           ['heroTitleLine1', 'Заголовок — рядок 1 (до акценту)'],
@@ -1360,8 +1404,11 @@ function AdminSettings() {
             <input value={settings.heroCtaSecondary || ''} onChange={(e) => patch('heroCtaSecondary', e.target.value)} style={{ width: '100%', padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
           </div>
         </div>
+      </div>
 
-        <div className="mono" style={{ color: 'var(--ink-3)', marginTop: 8, fontSize: 10 }}>ТРИ ЦИФРИ ВНИЗУ БАНЕРА</div>
+      <div className="admin-settings-card" style={{ ...settingsCard, maxWidth: 720, marginBottom: 24 }}>
+        <h3 style={settingsSubh}>Банер: три цифри внизу</h3>
+        <p className="mono" style={{ color: 'var(--ink-3)', fontSize: 10, margin: '-8px 0 0' }}>Число та підпис для кожної з трьох плашок під банером.</p>
         {[0, 1, 2].map((i) => (
           <div key={`hstat-${i}`} style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: 10, alignItems: 'end' }}>
             <div>
@@ -1382,9 +1429,11 @@ function AdminSettings() {
             </div>
           </div>
         ))}
+      </div>
 
-        <div className="mono" style={{ color: 'var(--ink-3)', marginTop: 12, fontSize: 10 }}>КОЛАЖ ЗПРАВА (5 ПЛИТОК)</div>
-        <p className="mono" style={{ color: 'var(--ink-3)', fontSize: 9, margin: '-8px 0 0' }}>Порожній варіант у списку — автоматично підставить наступний товар з каталогу. Кнопки «вгору/вниз» міняють плитки місцями.</p>
+      <div className="admin-settings-card" style={{ ...settingsCard, maxWidth: 720, marginBottom: 8 }}>
+        <h3 style={settingsSubh}>Колаж на головній (5 плиток)</h3>
+        <p className="mono" style={{ color: 'var(--ink-3)', fontSize: 10, margin: '-8px 0 0' }}>Фото на плитках беруться з картки обраного товару в каталозі. Порожній пункт — автоматично підставить наступний товар. «Вгору / вниз» — порядок плиток.</p>
         {heroSlots.map((slotId, idx) => (
           <div key={`hero-tile-${idx}`} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 10, alignItems: 'center' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -1411,9 +1460,10 @@ function AdminSettings() {
       </div>
 
       <h2 style={{ fontFamily: 'Fraunces, serif', fontStyle: 'italic', fontSize: 36, margin: '48px 0 8px' }}>Контакти</h2>
-      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 24, fontSize: 10 }}>ТЕЛЕФОН · EMAIL · АДРЕСА · СОЦМЕРЕЖІ</p>
+      <p className="mono" style={{ color: 'var(--ink-3)', marginBottom: 28, fontSize: 10 }}>Окремо: реквізити на сторінці та блок соцмереж.</p>
 
-      <div className="admin-settings-card" style={{ maxWidth: 560, border: '1px solid var(--line)', padding: 24, background: 'var(--bg-2)', display: 'grid', gap: 16 }}>
+      <div className="admin-settings-card" style={{ ...settingsCard, maxWidth: 560, marginBottom: 24 }}>
+        <h3 style={settingsSubh}>Контакти: адреса, телефон, email</h3>
         {[
           ['addressLine', 'Адреса (рядок 1)'],
           ['cityLine', 'Місто / область (рядок 2)'],
@@ -1426,9 +1476,11 @@ function AdminSettings() {
             <input value={settings[k] || ''} onChange={(e) => patch(k, e.target.value)} style={{ width: '100%', padding: 12, background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }} />
           </div>
         ))}
+      </div>
 
-        <div className="mono" style={{ color: 'var(--ink-3)', marginTop: 8, fontSize: 10 }}>СОЦМЕРЕЖІ</div>
-        <p className="mono" style={{ color: 'var(--ink-3)', fontSize: 9, margin: '-8px 0 4px' }}>Тягніть ⋮⋮ за рядком, щоб змінити порядок</p>
+      <div className="admin-settings-card" style={{ ...settingsCard, maxWidth: 560 }}>
+        <h3 style={settingsSubh}>Контакти: соцмережі</h3>
+        <p className="mono" style={{ color: 'var(--ink-3)', fontSize: 10, margin: '-8px 0 4px' }}>Тягніть ⋮⋮ за рядком, щоб змінити порядок</p>
         {(settings.socials || []).map((s, i) => (
           <div
             key={s.id || `soc_row_${i}`}
